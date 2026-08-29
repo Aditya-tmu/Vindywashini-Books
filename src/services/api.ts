@@ -550,5 +550,29 @@ export const api = {
     `${API_BASE}/gst/gstr1/export-json?companyId=${companyId}&period=${period}`,
   getBackupDownloadUrl: (companyId?: string) =>
     `${API_BASE}/backup/download${companyId ? '?companyId=' + companyId : ''}`,
+
+  // HTML Preview URLs & fetchers
+  getInvoicePreviewHtmlUrl: (invoiceId: string, template?: string, copyTitle?: string) => {
+    const params = new URLSearchParams();
+    if (template) params.append('template', template);
+    if (copyTitle) params.append('copy', copyTitle);
+    params.append('t', String(Date.now()));
+    return `${API_BASE}/invoices/${invoiceId}/preview-html?${params.toString()}`;
+  },
+  getPurchasePreviewHtmlUrl: (purchaseId: string) => {
+    return `${API_BASE}/purchases/${purchaseId}/preview-html?t=${Date.now()}`;
+  },
+  getPreviewHtmlContent: async (url: string): Promise<string> => {
+    try {
+      const endpoint = url.startsWith(API_BASE) ? url.substring(API_BASE.length) : url;
+      const res = await client.get(endpoint, { responseType: 'text' });
+      return res.data;
+    } catch (e: any) {
+      console.error('Error fetching preview HTML content:', e);
+      return '';
+    }
+  },
 };
+
+export { API_BASE, getApiBase };
 

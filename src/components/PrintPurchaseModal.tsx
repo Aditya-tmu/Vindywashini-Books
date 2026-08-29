@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { PurchaseBill, Company } from '../types';
 import { useAppStore } from '../store/useAppStore';
+import { api } from '../services/api';
 
 interface PrintPurchaseModalProps {
   purchase: PurchaseBill;
@@ -46,13 +47,13 @@ export const PrintPurchaseModal: React.FC<PrintPurchaseModalProps> = ({
 
   if (!isOpen) return null;
 
-  const previewUrl = `http://127.0.0.1:4545/api/purchases/${purchase._id}/preview-html?t=${Date.now()}`;
+  const previewUrl = api.getPurchasePreviewHtmlUrl(purchase._id);
 
   // Fetch rendered HTML content for PDF export or direct print
   const fetchCurrentHtml = async (): Promise<string> => {
     try {
-      const response = await fetch(previewUrl);
-      return await response.text();
+      const html = await api.getPreviewHtmlContent(previewUrl);
+      return html;
     } catch (e) {
       console.error('Error fetching purchase preview HTML:', e);
       return '';

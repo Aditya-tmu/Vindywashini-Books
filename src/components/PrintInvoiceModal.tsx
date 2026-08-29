@@ -80,15 +80,13 @@ export const PrintInvoiceModal: React.FC<PrintInvoiceModalProps> = ({
 
   if (!isOpen) return null;
 
-  const previewUrl = `http://127.0.0.1:4545/api/invoices/${invoice._id}/preview-html?template=${selectedTemplate}&copy=${encodeURIComponent(
-    copyTitle
-  )}&t=${Date.now()}`;
+  const previewUrl = api.getInvoicePreviewHtmlUrl(invoice._id, selectedTemplate, copyTitle);
 
   // Fetch rendered HTML content for PDF export or direct print
   const fetchCurrentHtml = async (): Promise<string> => {
     try {
-      const response = await fetch(previewUrl);
-      return await response.text();
+      const html = await api.getPreviewHtmlContent(previewUrl);
+      return html;
     } catch (e) {
       console.error('Error fetching preview HTML:', e);
       return '';
