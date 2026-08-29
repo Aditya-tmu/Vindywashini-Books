@@ -6,24 +6,58 @@ import { MigrationService } from '../services/migrationService';
 
 const router = Router();
 
+function maskSensitiveUri(uri?: string): string {
+  if (!uri || typeof uri !== 'string') return '';
+  return uri.replace(/:([^:@]+)@/, ':••••••••@');
+}
+
+function sanitizeSettingsData(data: any): any {
+  if (!data) return data;
+  const clone = typeof data.toObject === 'function' ? data.toObject() : JSON.parse(JSON.stringify(data));
+  if (clone.postgresUri) {
+    clone.postgresUri = maskSensitiveUri(clone.postgresUri);
+  }
+  if (clone.mongoUri) {
+    clone.mongoUri = maskSensitiveUri(clone.mongoUri);
+  }
+  if (clone.smtp?.pass) {
+    clone.smtp.pass = '••••••••';
+    clone.smtp.hasPassword = true;
+  }
+  if (clone.storage?.serviceRoleKey) {
+    clone.storage.serviceRoleKey = '••••••••';
+    clone.storage.hasKey = true;
+  }
+  return clone;
+}
+
 /**
  * GET /api/settings - Get settings for company
  */
 router.get('/', async (req, res) => {
-  const dbStatus = DatabaseManager.getStatus();
+  const rawStatus = DatabaseManager.getStatus();
+  const dbStatus = {
+    ...rawStatus,
+    uri: maskSensitiveUri(rawStatus.uri),
+  };
+
   try {
     const { companyId } = req.query;
     const repos = getRepositories();
     const settings = await repos.settings.getSettings(companyId as string | undefined);
     const persisted = loadPersistedDbConfig();
 
+    const responseData = settings
+      ? sanitizeSettingsData(settings)
+      : {
+          databaseProvider: persisted.provider,
+          mongoUri: maskSensitiveUri(persisted.mongoUri),
+          postgresUri: maskSensitiveUri(persisted.postgresUri),
+        };
+
     res.json({
       success: true,
-      data: settings || {
-        databaseProvider: persisted.provider,
-        mongoUri: persisted.mongoUri,
-        postgresUri: persisted.postgresUri,
-      },
+      data: responseData,
       dbStatus,
     });
   } catch (err: any) {
@@ -32,8 +66,8 @@ router.get('/', async (req, res) => {
       success: true,
       data: {
         databaseProvider: persisted.provider,
-        mongoUri: persisted.mongoUri,
-        postgresUri: persisted.postgresUri,
+        mongoUri: maskSensitiveUri(persisted.mongoUri),
+        postgresUri: maskSensitiveUri(persisted.postgresUri),
       },
       dbStatus,
     });
@@ -47,6 +81,22 @@ router.put('/', async (req, res) => {
   try {
     const { companyId, ...updates } = req.body;
     const repos = getRepositories();
+
+    // Preserve real credentials if masked placeholder is passed back
+    const existing = await repos.settings.getSettings(companyId as string | undefined);
+    if (updates.postgresUri && updates.postgresUri.includes('••••')) {
+      delete updates.postgresUri;
+    }
+    if (updates.mongoUri && updates.mongoUri.includes('••••')) {
+      delete updates.mongoUri;
+    }
+    if (updates.smtp?.pass && (updates.smtp.pass === '••••••••' || updates.smtp.pass.includes('••••'))) {
+      updates.smtp.pass = existing?.smtp?.pass || '';
+    }
+    if (updates.storage?.serviceRoleKey && (updates.storage.serviceRoleKey === '••••••••' || updates.storage.serviceRoleKey.includes('••••'))) {
+      updates.storage.serviceRoleKey = existing?.storage?.serviceRoleKey || '';
+    }
+
     const settings = await repos.settings.updateSettings(companyId, updates);
 
     if (updates.databaseProvider || updates.mongoUri || updates.postgresUri) {
@@ -57,7 +107,7 @@ router.put('/', async (req, res) => {
       });
     }
 
-    res.json({ success: true, data: settings });
+    res.json({ success: true, data: sanitizeSettingsData(settings) });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }

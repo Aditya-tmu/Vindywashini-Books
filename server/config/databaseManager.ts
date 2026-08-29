@@ -128,7 +128,7 @@ export class DatabaseManager {
       return {
         provider: 'postgres' as const,
         status: pgStatus.connected ? ('connected' as const) : pgStatus.error ? ('error' as const) : ('disconnected' as const),
-        uri: pgStatus.uri,
+        uri: PostgresClient.getSanitizedUri(pgStatus.uri),
         error: pgStatus.error,
         readyState: pgStatus.connected ? 1 : 0,
         host,
@@ -140,6 +140,7 @@ export class DatabaseManager {
     return {
       provider: 'mongodb' as const,
       ...mongoStatus,
+      uri: (mongoStatus.uri || '').replace(/:([^:@]+)@/, ':****@'),
     };
   }
 
