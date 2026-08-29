@@ -1,0 +1,119 @@
+{
+  "name": "vindywashini-books",
+  "version": "1.0.0",
+  "description": "Vindywashini Books - Desktop Accounting & Billing App for Indian Businesses",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev:server": "tsx watch server/index.ts",
+    "dev:vite": "vite",
+    "dev:electron": "wait-on tcp:5173 tcp:4545 && electron .",
+    "dev": "concurrently -k \"npm run dev:server\" \"npm run dev:vite\" \"npm run dev:electron\"",
+    "start": "electron .",
+    "build:server": "tsc -p tsconfig.server.json",
+    "build:vite": "tsc --noEmit && vite build",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "build": "npm run build:vite && npm run build:server && npm run build:electron && npm run test:smoke",
+    "preview": "vite preview",
+    "test:smoke": "node scripts/smoke-test.js",
+    "dist": "npm run build && electron-builder",
+    "dist:publish": "npm run build && electron-builder --publish always",
+    "dist:draft": "npm run build && electron-builder -p onTagOrDraft"
+  },
+  "keywords": [
+    "accounting",
+    "billing",
+    "gst",
+    "tally",
+    "electron",
+    "pos",
+    "invoice"
+  ],
+  "author": "Vindywashini",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/storage-js": "^2.112.3",
+    "adm-zip": "^0.5.16",
+    "archiver": "^7.0.1",
+    "archiver-utils": "^5.0.2",
+    "axios": "^1.7.9",
+    "clsx": "^2.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "electron-updater": "^6.8.9",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.2",
+    "lucide-react": "^0.475.0",
+    "mongoose": "^8.10.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.10.0",
+    "pg": "^8.23.0",
+    "puppeteer-core": "^25.8.0",
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^3.0.1",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
+    "@types/archiver": "^6.0.3",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.13.1",
+    "@types/nodemailer": "^6.4.17",
+    "@types/pg": "^8.21.0",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^34.2.0",
+    "electron-builder": "^25.1.8",
+    "postcss": "^8.5.2",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0",
+    "wait-on": "^8.0.2"
+  },
+  "build": {
+    "appId": "com.vindywashini.books",
+    "productName": "Vindywashini Books",
+    "copyright": "Copyright © 2026 Vindywashini",
+    "directories": {
+      "output": "release"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Aditya-tmu",
+      "repo": "Vindywashini-Books"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-server/**/*",
+      "dist-electron/**/*",
+      "logo.ico",
+      "package.json"
+    ],
+    "win": {
+      "icon": "logo.ico",
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Vindywashini Books",
+      "installerIcon": "logo.ico",
+      "uninstallerIcon": "logo.ico",
+      "installerHeaderIcon": "logo.ico"
+    }
+  }
+}
