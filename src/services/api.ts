@@ -12,7 +12,16 @@ import {
   DbStatus,
 } from '../types';
 
-const API_BASE = 'http://127.0.0.1:4545/api';
+const getApiBase = (): string => {
+  const envUrl = (import.meta as any).env?.VITE_API_URL;
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim()) {
+    const clean = envUrl.trim().replace(/\/+$/, '');
+    return clean.endsWith('/api') ? clean : `${clean}/api`;
+  }
+  return 'http://127.0.0.1:4545/api';
+};
+
+const API_BASE = getApiBase();
 
 const client = axios.create({
   baseURL: API_BASE,
