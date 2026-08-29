@@ -53,11 +53,14 @@ export const loadPersistedDbConfig = (): DbConfigData => {
     if (fs.existsSync(configPath)) {
       const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
       if (data && data.provider) {
+        const prov: DatabaseProvider = data.provider === 'postgres' ? 'postgres' : 'mongodb';
+        const pgUri = (data.postgresUri || (prov === 'postgres' ? data.uri : '') || process.env.POSTGRES_URI || '').trim();
+        const mUri = (data.mongoUri || (prov === 'mongodb' ? data.uri : '') || (process.env.MONGO_URI ? normalizeMongoUri(process.env.MONGO_URI) : 'mongodb://127.0.0.1:27017/vindywashini_books')).trim();
         return {
-          provider: data.provider,
-          uri: data.uri || (data.provider === 'postgres' ? data.postgresUri : data.mongoUri) || 'mongodb://127.0.0.1:27017/vindywashini_books',
-          mongoUri: data.mongoUri || 'mongodb://127.0.0.1:27017/vindywashini_books',
-          postgresUri: data.postgresUri || '',
+          provider: prov,
+          uri: prov === 'postgres' ? (pgUri || mUri) : (mUri || pgUri),
+          mongoUri: mUri,
+          postgresUri: pgUri,
         };
       }
     }
@@ -65,12 +68,16 @@ export const loadPersistedDbConfig = (): DbConfigData => {
     console.warn('[DatabaseManager] Could not load persisted db config:', err);
   }
 
-  const defaultMongo = process.env.MONGO_URI ? normalizeMongoUri(process.env.MONGO_URI) : 'mongodb://127.0.0.1:27017/vindywashini_books';
+  const defaultMongo = (process.env.MONGO_URI ? normalizeMongoUri(process.env.MONGO_URI) : 'mongodb://127.0.0.1:27017/vindywashini_books').trim();
+  const defaultPg = (process.env.POSTGRES_URI || '').trim();
+  const envProv = (process.env.DB_PROVIDER || '').trim().toLowerCase();
+  const provider: DatabaseProvider = (envProv === 'postgres' || envProv === 'supabase' || (!envProv && Boolean(defaultPg))) ? 'postgres' : 'mongodb';
+
   return {
-    provider: (process.env.DB_PROVIDER as any) || 'mongodb',
-    uri: defaultMongo,
+    provider,
+    uri: provider === 'postgres' ? (defaultPg || defaultMongo) : (defaultMongo || defaultPg),
     mongoUri: defaultMongo,
-    postgresUri: process.env.POSTGRES_URI || '',
+    postgresUri: defaultPg,
   };
 };
 
@@ -142,17 +149,20 @@ export class DatabaseManager {
 
     try {
       const config = loadPersistedDbConfig();
-      const rawUri = (customUri || config.uri || '').trim();
-      const isPgUri = rawUri.startsWith('postgresql://') || rawUri.startsWith('postgres://');
-      const isMongoUri = rawUri.startsWith('mongodb://') || rawUri.startsWith('mongodb+srv://');
-
       let provider = providerChoice || config.provider || 'mongodb';
-      if (isPgUri) {
-        provider = 'postgres';
-      } else if (isMongoUri) {
-        provider = 'mongodb';
+
+      let uriToUse = '';
+      if (customUri && customUri.trim()) {
+        uriToUse = customUri.trim();
+        if (uriToUse.startsWith('postgresql://') || uriToUse.startsWith('postgres://')) {
+          provider = 'postgres';
+        } else if (uriToUse.startsWith('mongodb://') || uriToUse.startsWith('mongodb+srv://')) {
+          provider = 'mongodb';
+        }
+      } else {
+        uriToUse = (provider === 'postgres' ? (config.postgresUri || config.uri) : (config.mongoUri || config.uri)) || '';
       }
-      const uriToUse = rawUri;
+      uriToUse = uriToUse.trim();
 
       if (provider === 'postgres') {
         const validation = validatePostgresUri(uriToUse);

@@ -121,7 +121,7 @@ function startServer() {
       const status = DatabaseManager.getStatus();
       if (status.readyState !== 1) {
         console.log(`[DB Auto-Reconnect] Attempting background reconnect (${status.provider})...`);
-        await DatabaseManager.connect();
+        await DatabaseManager.connect(status.provider);
       }
     }, 10000);
 
