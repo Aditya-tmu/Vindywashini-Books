@@ -1035,6 +1035,16 @@ export class PDFGenerator {
    * Automatically locate a Chromium-based browser executable (Edge, Chrome, Brave, Chromium)
    */
   public static findBrowserExecutable(): string | null {
+    // 0. Check environment variables first (for Render, Docker, or custom cloud setups)
+    const envCandidate =
+      process.env.PUPPETEER_EXECUTABLE_PATH ||
+      process.env.CHROME_BIN ||
+      process.env.CHROME_PATH ||
+      process.env.CHROMIUM_PATH;
+    if (envCandidate && fs.existsSync(envCandidate)) {
+      return envCandidate;
+    }
+
     const candidates: string[] = [];
 
     // 1. Windows standard Edge / Chrome / Brave paths
@@ -1214,14 +1224,14 @@ export class PDFGenerator {
   }
 
   /**
-   * Generate consolidated Bulk PDF containing all customer sales invoices
+   * Generate consolidated Bulk HTML containing all customer sales invoices
    */
-  public static async generateBulkInvoicesPdfBuffer(
+  public static async generateBulkInvoicesHtml(
     invoices: (IInvoice | any)[],
     company: ICompany
-  ): Promise<Buffer> {
+  ): Promise<string> {
     if (!invoices || invoices.length === 0) {
-      throw new Error('No invoices provided for bulk PDF generation.');
+      throw new Error('No invoices provided for bulk generation.');
     }
 
     const renderedPages: string[] = [];
@@ -1232,7 +1242,7 @@ export class PDFGenerator {
       renderedPages.push(`<div class="invoice-page w-full">${bodyContent}</div>`);
     }
 
-    const combinedHtml = `
+    return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -1299,19 +1309,28 @@ export class PDFGenerator {
 </body>
 </html>
     `;
+  }
 
+  /**
+   * Generate consolidated Bulk PDF buffer containing all customer sales invoices
+   */
+  public static async generateBulkInvoicesPdfBuffer(
+    invoices: (IInvoice | any)[],
+    company: ICompany
+  ): Promise<Buffer> {
+    const combinedHtml = await this.generateBulkInvoicesHtml(invoices, company);
     return await this.generatePdfBuffer(combinedHtml, { format: 'A4', printBackground: true });
   }
 
   /**
-   * Generate consolidated Bulk PDF containing all supplier purchase bills
+   * Generate consolidated Bulk HTML containing all supplier purchase bills
    */
-  public static async generateBulkPurchaseBillsPdfBuffer(
+  public static async generateBulkPurchaseBillsHtml(
     purchases: (IPurchaseBill | any)[],
     company: ICompany
-  ): Promise<Buffer> {
+  ): Promise<string> {
     if (!purchases || purchases.length === 0) {
-      throw new Error('No purchase bills provided for bulk PDF generation.');
+      throw new Error('No purchase bills provided for bulk generation.');
     }
 
     const renderedPages: string[] = [];
@@ -1322,7 +1341,7 @@ export class PDFGenerator {
       renderedPages.push(`<div class="invoice-page w-full">${bodyContent}</div>`);
     }
 
-    const combinedHtml = `
+    return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -1389,12 +1408,141 @@ export class PDFGenerator {
 </body>
 </html>
     `;
+  }
 
-
-
-
-
+  /**
+   * Generate consolidated Bulk PDF containing all supplier purchase bills
+   */
+  public static async generateBulkPurchaseBillsPdfBuffer(
+    purchases: (IPurchaseBill | any)[],
+    company: ICompany
+  ): Promise<Buffer> {
+    const combinedHtml = await this.generateBulkPurchaseBillsHtml(purchases, company);
     return await this.generatePdfBuffer(combinedHtml, { format: 'A4', printBackground: true });
+  }
+
+  /**
+   * Universal Helper: Injects an interactive top action bar (Download PDF, Print / Save as PDF, Close)
+   * into any invoice, purchase, or bulk HTML document.
+   * Toolbar is automatically hidden inside iframes (embedded preview canvas) and when printed/saved as PDF!
+   */
+  public static injectPreviewToolbar(
+    html: string,
+    options: {
+      title: string;
+      subtitle?: string;
+      badge?: string;
+      filename?: string;
+      format?: string;
+      autoPrint?: boolean;
+    }
+  ): string {
+    const safeFilename = (options.filename || 'document').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const pdfFormat = options.format || 'a4';
+
+    const toolbarHtml = `
+  <div id="preview-action-toolbar" class="no-print" style="position: sticky; top: 0; left: 0; right: 0; z-index: 99999; background: #0f172a; color: #f8fafc; padding: 10px 18px; border-bottom: 1px solid #334155; box-shadow: 0 4px 14px rgba(0,0,0,0.35); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); color: #10b981; border-radius: 8px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+        📄
+      </div>
+      <div>
+        <div style="font-weight: 700; font-size: 13px; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+          <span>${options.title}</span>
+          ${options.badge ? `<span style="font-size: 10px; padding: 2px 7px; border-radius: 4px; background: #1e293b; color: #94a3b8; border: 1px solid #334155; font-family: monospace;">${options.badge}</span>` : ''}
+        </div>
+        ${options.subtitle ? `<div style="font-size: 11px; color: #94a3b8; margin-top: 1px;">${options.subtitle}</div>` : ''}
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <!-- Direct Download PDF via client-side html2pdf with fallback to native print -->
+      <button id="btn-download-pdf" onclick="downloadPreviewPDF()" style="background: #059669; color: #ffffff; border: none; border-radius: 6px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: background 0.15s;">
+        <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        <span>Download PDF</span>
+      </button>
+
+      <!-- Native Print / Save as PDF via browser print dialog -->
+      <button onclick="window.print()" style="background: #4f46e5; color: #ffffff; border: none; border-radius: 6px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: background 0.15s;" title="Print or choose 'Save as PDF' destination">
+        <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+        <span>Print / Save as PDF</span>
+      </button>
+
+      <!-- Close Tab Button -->
+      <button onclick="window.close()" style="background: #1e293b; color: #cbd5e1; border: 1px solid #475569; border-radius: 6px; padding: 7px 12px; font-size: 12px; font-weight: 600; cursor: pointer;">
+        ✕ Close
+      </button>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script>
+    // Automatically hide toolbar if embedded in an iframe (modal canvas preview)
+    if (window.self !== window.top) {
+      document.addEventListener('DOMContentLoaded', function() {
+        var tb = document.getElementById('preview-action-toolbar');
+        if (tb) tb.style.display = 'none';
+      });
+    }
+
+    function downloadPreviewPDF() {
+      var btn = document.getElementById('btn-download-pdf');
+      if (!btn) return;
+      var origText = btn.innerHTML;
+      btn.innerHTML = '⏳ Generating PDF...';
+      btn.disabled = true;
+
+      var opt = {
+        margin: 4,
+        filename: '${safeFilename}.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: '${pdfFormat}', orientation: 'portrait' }
+      };
+
+      var target = document.querySelector('.invoice-card') || document.querySelector('.report-card') || document.body;
+
+      if (window.html2pdf) {
+        window.html2pdf().set(opt).from(target).save().then(function() {
+          btn.innerHTML = origText;
+          btn.disabled = false;
+        }).catch(function(err) {
+          console.warn('html2pdf notice, opening print dialog:', err);
+          btn.innerHTML = origText;
+          btn.disabled = false;
+          window.print();
+        });
+      } else {
+        btn.innerHTML = origText;
+        btn.disabled = false;
+        window.print();
+      }
+    }
+
+    ${options.autoPrint ? 'window.addEventListener("load", function() { setTimeout(function() { window.print(); }, 400); });' : ''}
+  </script>
+  <style>
+    @media print {
+      .no-print, #preview-action-toolbar {
+        display: none !important;
+      }
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+    }
+  </style>
+    `;
+
+    if (html.includes('</head>')) {
+      const headInjected = html.replace('</head>', `  <style>@media print { .no-print, #preview-action-toolbar { display: none !important; } }</style>\n</head>`);
+      const bodyMatch = headInjected.match(/<body[^>]*>/i);
+      if (bodyMatch) {
+        return headInjected.replace(bodyMatch[0], `${bodyMatch[0]}\n${toolbarHtml}`);
+      }
+      return toolbarHtml + headInjected;
+    }
+
+    return toolbarHtml + html;
   }
 
   /**

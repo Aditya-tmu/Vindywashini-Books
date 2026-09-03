@@ -1,6 +1,5 @@
 import nodemailer from 'nodemailer';
-import { Settings } from '../models/Settings';
-import { Company } from '../models/Company';
+import { getRepositories } from '../repositories/factory';
 import { IInvoice } from '../models/Invoice';
 import fs from 'fs';
 
@@ -43,8 +42,11 @@ export class EmailService {
     customRecipient?: string,
     customMessage?: string
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    const settings = await Settings.findOne({ companyId });
-    const company = await Company.findById(companyId);
+    const repos = getRepositories();
+    const [settings, company] = await Promise.all([
+      repos.settings.getSettings(companyId),
+      repos.companies.findById(companyId),
+    ]);
 
     if (!settings || !settings.smtp || !settings.smtp.enabled || !settings.smtp.user) {
       return {

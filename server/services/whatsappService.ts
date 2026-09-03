@@ -1,6 +1,5 @@
 import axios from 'axios';
-import { Settings } from '../models/Settings';
-import { Company } from '../models/Company';
+import { getRepositories } from '../repositories/factory';
 import { IInvoice } from '../models/Invoice';
 
 export class WhatsAppService {
@@ -60,8 +59,11 @@ export class WhatsAppService {
     customPhone?: string,
     customMessage?: string
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    const settings = await Settings.findOne({ companyId });
-    const company = await Company.findById(companyId);
+    const repos = getRepositories();
+    const [settings, company] = await Promise.all([
+      repos.settings.getSettings(companyId),
+      repos.companies.findById(companyId),
+    ]);
 
     if (!settings || !settings.whatsapp || !settings.whatsapp.accessToken || !settings.whatsapp.phoneNumberId) {
       return {
@@ -80,7 +82,7 @@ export class WhatsAppService {
 
     const greeting =
       customMessage ||
-      this.formatGreeting(settings.whatsapp.defaultGreetingTemplate, invoice, {
+      this.formatGreeting(settings.whatsapp?.defaultGreetingTemplate || '', invoice, {
         tradeName: company?.tradeName,
         legalName: company?.legalName,
       });

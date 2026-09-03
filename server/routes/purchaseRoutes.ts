@@ -48,6 +48,77 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * GET /api/purchases/party/:partyId/bulk-preview-html - Render multi-page consolidated bulk purchases HTML with toolbar
+ */
+router.get(['/party/:partyId/bulk-preview-html', '/bulk-preview-html'], async (req, res) => {
+  try {
+    const { companyId, partyId: queryPartyId, supplierId, range, fromDate, toDate } = req.query;
+    const effectiveSupplierId = req.params.partyId || queryPartyId || supplierId;
+
+    if (!companyId || !effectiveSupplierId) {
+      return res.status(400).send('<h3>companyId and partyId are required</h3>');
+    }
+
+    const repos = getRepositories();
+    const [party, company] = await Promise.all([
+      repos.parties.findById(String(effectiveSupplierId)),
+      repos.companies.findById(String(companyId)),
+    ]);
+
+    if (!company) return res.status(404).send('<h3>Company not found</h3>');
+    const supplierName = party?.name || 'Supplier';
+
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
+    const now = new Date();
+
+    if (range === 'this_month') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    } else if (range === 'last_month') {
+      startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      endDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    } else if (fromDate || toDate) {
+      if (fromDate) startDate = new Date(String(fromDate));
+      if (toDate) {
+        endDate = new Date(String(toDate));
+        endDate.setHours(23, 59, 59, 999);
+      }
+    }
+
+    const filter: any = {};
+    if (startDate) filter.startDate = startDate;
+    if (endDate) filter.endDate = endDate;
+
+    const purchases = await repos.purchases.findByParty(String(companyId), String(effectiveSupplierId), filter);
+
+    if (!purchases || purchases.length === 0) {
+      return res.status(404).send(`<h3>No purchase bills found for ${supplierName} in selected range.</h3>`);
+    }
+
+    const safeName = supplierName.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const startStr = startDate ? startDate.toISOString().split('T')[0] : 'all';
+    const endStr = endDate ? endDate.toISOString().split('T')[0] : 'time';
+    const filename = `purchases_${safeName}_${startStr}_${endStr}`;
+
+    const bulkHtml = await PDFGenerator.generateBulkPurchaseBillsHtml(purchases as any, company as any);
+    const finalHtml = PDFGenerator.injectPreviewToolbar(bulkHtml, {
+      title: `Bulk Purchase Bills (${purchases.length} Records)`,
+      subtitle: `${supplierName} • Period: ${startStr} to ${endStr}`,
+      badge: `${purchases.length} Bills`,
+      filename,
+      format: 'a4',
+      autoPrint: req.query.autoprint === 'true',
+    });
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(finalHtml);
+  } catch (err: any) {
+    res.status(500).send(`<h3>Error generating bulk purchase preview: ${err.message}</h3>`);
+  }
+});
+
+/**
  * GET /api/purchases/party/:partyId/bulk-pdf - Generate consolidated bulk PDF for a supplier
  */
 router.get(['/party/:partyId/bulk-pdf', '/bulk-pdf'], async (req, res) => {
@@ -100,60 +171,80 @@ router.get(['/party/:partyId/bulk-pdf', '/bulk-pdf'], async (req, res) => {
       });
     }
 
-    const pdfBuffer = await PDFGenerator.generateBulkPurchaseBillsPdfBuffer(purchases as any, company as any);
-
     const safeName = supplierName.replace(/[^a-zA-Z0-9_-]/g, '_');
     const startStr = startDate ? startDate.toISOString().split('T')[0] : 'all';
     const endStr = endDate ? endDate.toISOString().split('T')[0] : 'time';
     const filename = `purchases_${safeName}_${startStr}_${endStr}.pdf`;
 
-    // Opt-in Cloud Storage Upload for Bulk PDF
-    const wantsCloud = req.query.uploadToCloud === 'true' || (req.query as any).cloudUpload === 'true';
-    if (wantsCloud) {
-      const settings = await repos.settings.getSettings(String(companyId));
-      if (!StorageService.isConfigured(settings)) {
-        return res.status(400).json({
-          success: false,
-          error: 'Cloud storage is not configured or disabled in Settings.',
-        });
-      }
-
-      const uploadRes = await StorageService.uploadBulkExport(
-        String(companyId),
-        String(effectiveSupplierId),
-        startStr,
-        endStr,
-        pdfBuffer,
-        settings
-      );
-
-      if (!uploadRes.success) {
-        return res.status(500).json({
-          success: false,
-          error: `Could not upload to cloud storage — ${uploadRes.error}.`,
-        });
-      }
-
-      return res.json({
-        success: true,
-        signedUrl: uploadRes.signedUrl,
-        cloudPath: uploadRes.path,
-        expiresAt: uploadRes.expiresAt,
-        filename,
-        totalPurchases: purchases.length,
-        fileSizeBytes: pdfBuffer.length,
-      });
+    let pdfBuffer: Buffer | null = null;
+    try {
+      pdfBuffer = await PDFGenerator.generateBulkPurchaseBillsPdfBuffer(purchases as any, company as any);
+    } catch (pdfErr: any) {
+      console.warn('[PurchaseRoutes] Puppeteer bulk purchase PDF buffer generation notice:', pdfErr.message);
     }
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(pdfBuffer);
+    if (pdfBuffer) {
+      // Opt-in Cloud Storage Upload for Bulk PDF
+      const wantsCloud = req.query.uploadToCloud === 'true' || (req.query as any).cloudUpload === 'true';
+      if (wantsCloud) {
+        const settings = await repos.settings.getSettings(String(companyId));
+        if (!StorageService.isConfigured(settings)) {
+          return res.status(400).json({
+            success: false,
+            error: 'Cloud storage is not configured or disabled in Settings.',
+          });
+        }
+
+        const uploadRes = await StorageService.uploadBulkExport(
+          String(companyId),
+          String(effectiveSupplierId),
+          startStr,
+          endStr,
+          pdfBuffer,
+          settings
+        );
+
+        if (!uploadRes.success) {
+          return res.status(500).json({
+            success: false,
+            error: `Could not upload to cloud storage — ${uploadRes.error}.`,
+          });
+        }
+
+        return res.json({
+          success: true,
+          signedUrl: uploadRes.signedUrl,
+          cloudPath: uploadRes.path,
+          expiresAt: uploadRes.expiresAt,
+          filename,
+          totalPurchases: purchases.length,
+          fileSizeBytes: pdfBuffer.length,
+        });
+      }
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      return res.send(pdfBuffer);
+    }
+
+    // Graceful fallback if server lacks Chromium: render multi-page printable HTML with toolbar
+    const bulkHtml = await PDFGenerator.generateBulkPurchaseBillsHtml(purchases as any, company as any);
+    const finalHtml = PDFGenerator.injectPreviewToolbar(bulkHtml, {
+      title: `Bulk Purchase Bills (${purchases.length} Records)`,
+      subtitle: `${supplierName} • Period: ${startStr} to ${endStr}`,
+      badge: `${purchases.length} Bills`,
+      filename: `purchases_${safeName}_${startStr}_${endStr}`,
+      format: 'a4',
+      autoPrint: req.query.autoprint === 'true',
+    });
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(finalHtml);
   } catch (err: any) {
     console.error('Error generating bulk purchase PDF:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
 
 /**
  * GET /api/purchases/:id - Get single purchase bill
@@ -169,9 +260,55 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/purchases/:id/pdf - Generate and stream purchase bill PDF buffer (with universal fallback)
+ */
+router.get('/:id/pdf', async (req, res) => {
+  try {
+    const repos = getRepositories();
+    const purchase = await repos.purchases.findById(req.params.id);
+    if (!purchase) return res.status(404).json({ success: false, error: 'Purchase Bill not found' });
+
+    const company = await repos.companies.findById(purchase.companyId);
+    if (!company) return res.status(404).json({ success: false, error: 'Company not found' });
+
+    const safeNumber = (purchase.billNumber || purchase.supplierInvoiceNumber || 'Purchase').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const filename = `Purchase_${safeNumber}.pdf`;
+
+    let pdfBuffer: Buffer | null = null;
+    try {
+      pdfBuffer = await PDFGenerator.generatePurchaseBillPdfBuffer(purchase as any, company as any);
+    } catch (pdfErr: any) {
+      console.warn('[PurchaseRoutes] Puppeteer purchase PDF render notice:', pdfErr.message);
+    }
+
+    if (pdfBuffer) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      return res.send(pdfBuffer);
+    }
+
+    // Graceful fallback for environments without headless Chrome
+    const html = await PDFGenerator.renderPurchaseBillHtml(purchase as any, company as any);
+    const finalHtml = PDFGenerator.injectPreviewToolbar(html, {
+      title: `Purchase Bill #${purchase.billNumber || purchase.supplierInvoiceNumber}`,
+      subtitle: `${company.tradeName || company.legalName} • Supplier: ${purchase.supplierName}`,
+      badge: 'Inward Supply',
+      filename: `Purchase_${safeNumber}`,
+      format: 'a4',
+      autoPrint: req.query.autoprint === 'true',
+    });
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(finalHtml);
+  } catch (err: any) {
+    console.error('Error generating purchase PDF:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 /**
- * GET /api/purchases/:id/preview-html - Render A4 Purchase Record HTML
+ * GET /api/purchases/:id/preview-html - Render A4 Purchase Record HTML with toolbar
  */
 router.get('/:id/preview-html', async (req, res) => {
   try {
@@ -183,8 +320,20 @@ router.get('/:id/preview-html', async (req, res) => {
     if (!company) return res.status(404).send('<h3>Company not found</h3>');
 
     const html = await PDFGenerator.renderPurchaseBillHtml(purchase as any, company as any);
+    const safeNumber = (purchase.billNumber || purchase.supplierInvoiceNumber || 'Purchase').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const autoPrint = req.query.autoprint === 'true';
+
+    const finalHtml = PDFGenerator.injectPreviewToolbar(html, {
+      title: `Purchase Bill #${purchase.billNumber || purchase.supplierInvoiceNumber}`,
+      subtitle: `${company.tradeName || company.legalName} • Supplier: ${purchase.supplierName}`,
+      badge: 'Inward Supply',
+      filename: `Purchase_${safeNumber}`,
+      format: 'a4',
+      autoPrint,
+    });
+
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.send(html);
+    res.send(finalHtml);
   } catch (err: any) {
     res.status(500).send(`<h3>Error generating purchase preview: ${err.message}</h3>`);
   }

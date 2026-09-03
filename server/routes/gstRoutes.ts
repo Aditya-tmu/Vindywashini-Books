@@ -6,6 +6,7 @@ import { GSTEngine } from '../services/gstEngine';
 import { ExcelService } from '../services/excelService';
 import { GSPService } from '../services/gspService';
 import { GSTReturn } from '../models/GSTReturn';
+import { getActiveProvider } from '../repositories/factory';
 import { getTempDir, getGstExportsDir } from '../config/paths';
 
 const router = Router();
@@ -42,26 +43,32 @@ router.get('/gstr1/export-excel', async (req, res) => {
     const outputDir = getGstExportsDir();
     const result = await ExcelService.generateGSTR1Workbook(gstr1Data, outputDir);
 
-    // Save snapshot in GSTReturn
-    await GSTReturn.findOneAndUpdate(
-      { companyId, period, returnType: 'GSTR-1' },
-      {
-        companyId,
-        period,
-        returnType: 'GSTR-1',
-        summaryData: gstr1Data.summary,
-        filingStatus: 'Generated',
-        $push: {
-          exportFiles: {
-            format: 'xlsx',
-            filename: result.filename,
-            filePath: result.filePath,
-            generatedAt: new Date(),
+    // Save snapshot in GSTReturn only if running with MongoDB provider
+    if (getActiveProvider() === 'mongodb') {
+      try {
+        await GSTReturn.findOneAndUpdate(
+          { companyId, period, returnType: 'GSTR-1' },
+          {
+            companyId,
+            period,
+            returnType: 'GSTR-1',
+            summaryData: gstr1Data.summary,
+            filingStatus: 'Generated',
+            $push: {
+              exportFiles: {
+                format: 'xlsx',
+                filename: result.filename,
+                filePath: result.filePath,
+                generatedAt: new Date(),
+              },
+            },
           },
-        },
-      },
-      { upsert: true }
-    );
+          { upsert: true }
+        );
+      } catch (logErr: any) {
+        console.warn('[GSTRoutes] Note on GSTReturn Mongo snapshot:', logErr.message);
+      }
+    }
 
     res.download(result.filePath, result.filename);
   } catch (err: any) {
@@ -124,17 +131,21 @@ router.post('/gstr1/direct-efile', async (req, res) => {
     const gstr1Data = await GSTEngine.generateGSTR1(String(companyId), String(period));
     const result = await GSPService.pushGSTR1(String(companyId), gstr1Data);
 
-    if (result.success) {
-      await GSTReturn.findOneAndUpdate(
-        { companyId, period, returnType: 'GSTR-1' },
-        {
-          filingStatus: 'Filed',
-          gspRefId: result.referenceId,
-          arn: result.arn,
-          filingDate: new Date(),
-        },
-        { upsert: true }
-      );
+    if (result.success && getActiveProvider() === 'mongodb') {
+      try {
+        await GSTReturn.findOneAndUpdate(
+          { companyId, period, returnType: 'GSTR-1' },
+          {
+            filingStatus: 'Filed',
+            gspRefId: result.referenceId,
+            arn: result.arn,
+            filingDate: new Date(),
+          },
+          { upsert: true }
+        );
+      } catch (logErr: any) {
+        console.warn('[GSTRoutes] Note on GSTReturn Mongo update:', logErr.message);
+      }
     }
 
     res.json({ success: result.success, data: result });

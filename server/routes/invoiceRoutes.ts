@@ -48,6 +48,77 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * GET /api/invoices/party/:partyId/bulk-preview-html - Render multi-page consolidated bulk invoices HTML with toolbar
+ */
+router.get(['/party/:partyId/bulk-preview-html', '/bulk-preview-html'], async (req, res) => {
+  try {
+    const { companyId, partyId: queryPartyId, range, fromDate, toDate } = req.query;
+    const effectivePartyId = req.params.partyId || queryPartyId;
+
+    if (!companyId || !effectivePartyId) {
+      return res.status(400).send('<h3>companyId and partyId are required</h3>');
+    }
+
+    const repos = getRepositories();
+    const [party, company] = await Promise.all([
+      repos.parties.findById(String(effectivePartyId)),
+      repos.companies.findById(String(companyId)),
+    ]);
+
+    if (!company) return res.status(404).send('<h3>Company not found</h3>');
+    const customerName = party?.name || 'Customer';
+
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
+    const now = new Date();
+
+    if (range === 'this_month') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    } else if (range === 'last_month') {
+      startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      endDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    } else if (fromDate || toDate) {
+      if (fromDate) startDate = new Date(String(fromDate));
+      if (toDate) {
+        endDate = new Date(String(toDate));
+        endDate.setHours(23, 59, 59, 999);
+      }
+    }
+
+    const filter: any = {};
+    if (startDate) filter.startDate = startDate;
+    if (endDate) filter.endDate = endDate;
+
+    const invoices = await repos.invoices.findByParty(String(companyId), String(effectivePartyId), filter);
+
+    if (!invoices || invoices.length === 0) {
+      return res.status(404).send(`<h3>No sales invoices found for ${customerName} in the selected date range.</h3>`);
+    }
+
+    const safeName = customerName.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const startStr = startDate ? startDate.toISOString().split('T')[0] : 'all';
+    const endStr = endDate ? endDate.toISOString().split('T')[0] : 'time';
+    const filename = `invoices_${safeName}_${startStr}_${endStr}`;
+
+    const bulkHtml = await PDFGenerator.generateBulkInvoicesHtml(invoices as any, company as any);
+    const finalHtml = PDFGenerator.injectPreviewToolbar(bulkHtml, {
+      title: `Bulk Sales Invoices (${invoices.length} Vouchers)`,
+      subtitle: `${customerName} • Period: ${startStr} to ${endStr}`,
+      badge: `${invoices.length} Invoices`,
+      filename,
+      format: 'a4',
+      autoPrint: req.query.autoprint === 'true',
+    });
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(finalHtml);
+  } catch (err: any) {
+    res.status(500).send(`<h3>Error generating bulk invoice preview: ${err.message}</h3>`);
+  }
+});
+
+/**
  * GET /api/invoices/party/:partyId/bulk-pdf - Generate consolidated bulk PDF for a customer
  */
 router.get(['/party/:partyId/bulk-pdf', '/bulk-pdf'], async (req, res) => {
@@ -100,60 +171,80 @@ router.get(['/party/:partyId/bulk-pdf', '/bulk-pdf'], async (req, res) => {
       });
     }
 
-    const pdfBuffer = await PDFGenerator.generateBulkInvoicesPdfBuffer(invoices as any, company as any);
-
     const safeName = customerName.replace(/[^a-zA-Z0-9_-]/g, '_');
     const startStr = startDate ? startDate.toISOString().split('T')[0] : 'all';
     const endStr = endDate ? endDate.toISOString().split('T')[0] : 'time';
     const filename = `invoices_${safeName}_${startStr}_${endStr}.pdf`;
 
-    // Opt-in Cloud Storage Upload for Bulk PDF
-    const wantsCloud = req.query.uploadToCloud === 'true' || (req.query as any).cloudUpload === 'true';
-    if (wantsCloud) {
-      const settings = await repos.settings.getSettings(String(companyId));
-      if (!StorageService.isConfigured(settings)) {
-        return res.status(400).json({
-          success: false,
-          error: 'Cloud storage is not configured or disabled in Settings.',
-        });
-      }
-
-      const uploadRes = await StorageService.uploadBulkExport(
-        String(companyId),
-        String(effectivePartyId),
-        startStr,
-        endStr,
-        pdfBuffer,
-        settings
-      );
-
-      if (!uploadRes.success) {
-        return res.status(500).json({
-          success: false,
-          error: `Could not upload to cloud storage — ${uploadRes.error}.`,
-        });
-      }
-
-      return res.json({
-        success: true,
-        signedUrl: uploadRes.signedUrl,
-        cloudPath: uploadRes.path,
-        expiresAt: uploadRes.expiresAt,
-        filename,
-        totalInvoices: invoices.length,
-        fileSizeBytes: pdfBuffer.length,
-      });
+    let pdfBuffer: Buffer | null = null;
+    try {
+      pdfBuffer = await PDFGenerator.generateBulkInvoicesPdfBuffer(invoices as any, company as any);
+    } catch (pdfErr: any) {
+      console.warn('[InvoiceRoutes] Puppeteer bulk PDF buffer generation notice:', pdfErr.message);
     }
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(pdfBuffer);
+    if (pdfBuffer) {
+      // Opt-in Cloud Storage Upload for Bulk PDF
+      const wantsCloud = req.query.uploadToCloud === 'true' || (req.query as any).cloudUpload === 'true';
+      if (wantsCloud) {
+        const settings = await repos.settings.getSettings(String(companyId));
+        if (!StorageService.isConfigured(settings)) {
+          return res.status(400).json({
+            success: false,
+            error: 'Cloud storage is not configured or disabled in Settings.',
+          });
+        }
+
+        const uploadRes = await StorageService.uploadBulkExport(
+          String(companyId),
+          String(effectivePartyId),
+          startStr,
+          endStr,
+          pdfBuffer,
+          settings
+        );
+
+        if (!uploadRes.success) {
+          return res.status(500).json({
+            success: false,
+            error: `Could not upload to cloud storage — ${uploadRes.error}.`,
+          });
+        }
+
+        return res.json({
+          success: true,
+          signedUrl: uploadRes.signedUrl,
+          cloudPath: uploadRes.path,
+          expiresAt: uploadRes.expiresAt,
+          filename,
+          totalInvoices: invoices.length,
+          fileSizeBytes: pdfBuffer.length,
+        });
+      }
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      return res.send(pdfBuffer);
+    }
+
+    // Graceful fallback if server environment lacks Chromium: render multi-page printable HTML with toolbar
+    const bulkHtml = await PDFGenerator.generateBulkInvoicesHtml(invoices as any, company as any);
+    const finalHtml = PDFGenerator.injectPreviewToolbar(bulkHtml, {
+      title: `Bulk Sales Invoices (${invoices.length} Vouchers)`,
+      subtitle: `${customerName} • Period: ${startStr} to ${endStr}`,
+      badge: `${invoices.length} Invoices`,
+      filename: `invoices_${safeName}_${startStr}_${endStr}`,
+      format: 'a4',
+      autoPrint: req.query.autoprint === 'true',
+    });
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(finalHtml);
   } catch (err: any) {
     console.error('Error generating bulk invoice PDF:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
 
 /**
  * GET /api/invoices/:id - Get single invoice
@@ -170,7 +261,7 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
- * GET /api/invoices/:id/pdf - Generate and stream invoice PDF buffer
+ * GET /api/invoices/:id/pdf - Generate and stream invoice PDF buffer (with universal fallback)
  */
 router.get('/:id/pdf', async (req, res) => {
   try {
@@ -182,35 +273,23 @@ router.get('/:id/pdf', async (req, res) => {
     if (!company) return res.status(404).json({ success: false, error: 'Company not found' });
 
     const template = (req.query.template as any) || invoice.templateUsed || company.defaultTemplate || 'A4';
-    const pdfBuffer = await PDFGenerator.generateInvoicePdfBuffer(invoice as any, company as any, template);
-
     const safeInvNo = invoice.invoiceNumber.replace(/[^a-zA-Z0-9_-]/g, '_');
     const filename = `Invoice_${safeInvNo}.pdf`;
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(pdfBuffer);
-  } catch (err: any) {
-    console.error('Error generating invoice PDF:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
+    let pdfBuffer: Buffer | null = null;
+    try {
+      pdfBuffer = await PDFGenerator.generateInvoicePdfBuffer(invoice as any, company as any, template);
+    } catch (pdfErr: any) {
+      console.warn('[InvoiceRoutes] Puppeteer invoice PDF render notice:', pdfErr.message);
+    }
 
-/**
- * GET /api/invoices/:id/preview-html - Render HTML preview of invoice in specified template
- */
-router.get('/:id/preview-html', async (req, res) => {
+    if (pdfBuffer) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      return res.send(pdfBuffer);
+    }
 
-  try {
-    const repos = getRepositories();
-    const invoice = await repos.invoices.findById(req.params.id);
-    if (!invoice) return res.status(404).send('Invoice not found');
-
-    const company = await repos.companies.findById(invoice.companyId);
-    if (!company) return res.status(404).send('Company not found');
-
-    const template = (req.query.template as any) || invoice.templateUsed || company.defaultTemplate || 'A4';
-
+    // Graceful fallback for environments without headless Chrome
     let html = '';
     if (template === 'POS-58') {
       html = await PDFGenerator.renderPosHtml(invoice as any, company as any, 58);
@@ -222,8 +301,64 @@ router.get('/:id/preview-html', async (req, res) => {
       html = await PDFGenerator.renderA4Html(invoice as any, company as any);
     }
 
-    res.setHeader('Content-Type', 'text/html');
-    res.send(html);
+    const finalHtml = PDFGenerator.injectPreviewToolbar(html, {
+      title: `Invoice #${invoice.invoiceNumber}`,
+      subtitle: `${company.tradeName || company.legalName} • ${template} Format`,
+      badge: 'Original for Recipient',
+      filename: `Invoice_${safeInvNo}_${template}`,
+      format: template === 'A5' ? 'a5' : 'a4',
+      autoPrint: req.query.autoprint === 'true',
+    });
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(finalHtml);
+  } catch (err: any) {
+    console.error('Error generating invoice PDF:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/invoices/:id/preview-html - Render HTML preview of invoice in specified template with action toolbar
+ */
+router.get('/:id/preview-html', async (req, res) => {
+  try {
+    const repos = getRepositories();
+    const invoice = await repos.invoices.findById(req.params.id);
+    if (!invoice) return res.status(404).send('Invoice not found');
+
+    const company = await repos.companies.findById(invoice.companyId);
+    if (!company) return res.status(404).send('Company not found');
+
+    const template = (req.query.template as any) || invoice.templateUsed || company.defaultTemplate || 'A4';
+    const copy = (req.query.copy as string) || 'Original for Recipient';
+
+    let html = '';
+    if (template === 'POS-58') {
+      html = await PDFGenerator.renderPosHtml(invoice as any, company as any, 58);
+    } else if (template === 'POS-80') {
+      html = await PDFGenerator.renderPosHtml(invoice as any, company as any, 80);
+    } else if (template === 'A5') {
+      html = await PDFGenerator.renderA5Html(invoice as any, company as any);
+    } else {
+      html = await PDFGenerator.renderA4Html(invoice as any, company as any, copy);
+    }
+
+    const safeNumber = invoice.invoiceNumber.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const autoPrint = req.query.autoprint === 'true';
+
+    // Inject download/print action toolbar (hidden automatically in iframes and when printing)
+    const finalHtml = PDFGenerator.injectPreviewToolbar(html, {
+      title: `Invoice #${invoice.invoiceNumber}`,
+      subtitle: `${company.tradeName || company.legalName} • ${template} Format`,
+      badge: copy,
+      filename: `Invoice_${safeNumber}_${template}`,
+      format: template === 'A5' ? 'a5' : 'a4',
+      autoPrint,
+    });
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(finalHtml);
   } catch (err: any) {
     res.status(500).send('Error rendering invoice: ' + err.message);
   }

@@ -287,54 +287,76 @@ router.get('/:id/gst-summary/pdf', async (req, res) => {
 
     const summary = await repos.invoices.getPartyGstSummary(String(companyId), req.params.id, { startDate, endDate });
     const { PDFGenerator } = await import('../services/pdfGenerator');
-    const pdfBuffer = await PDFGenerator.generateCustomerGstReportPdfBuffer(summary, party, company as any, label);
+    
+    let pdfBuffer: Buffer | null = null;
+    try {
+      pdfBuffer = await PDFGenerator.generateCustomerGstReportPdfBuffer(summary, party, company as any, label);
+    } catch (pdfErr: any) {
+      console.warn('[PartyRoutes] Puppeteer GST report render notice:', pdfErr.message);
+    }
 
     const safeName = party.name.replace(/[^a-zA-Z0-9_-]/g, '_');
     const startStr = startDate ? startDate.toISOString().split('T')[0] : 'all';
     const endStr = endDate ? endDate.toISOString().split('T')[0] : 'time';
     const filename = `gst_summary_${safeName}_${startStr}_${endStr}.pdf`;
 
-    // Opt-in Cloud Storage Upload for GST Summary Report
-    const wantsCloud = req.query.uploadToCloud === 'true' || (req.query as any).cloudUpload === 'true';
-    if (wantsCloud) {
-      const settings = await repos.settings.getSettings(String(companyId));
-      if (!StorageService.isConfigured(settings)) {
-        return res.status(400).json({
-          success: false,
-          error: 'Cloud storage is not configured or disabled in Settings.',
+    if (pdfBuffer) {
+      // Opt-in Cloud Storage Upload for GST Summary Report
+      const wantsCloud = req.query.uploadToCloud === 'true' || (req.query as any).cloudUpload === 'true';
+      if (wantsCloud) {
+        const settings = await repos.settings.getSettings(String(companyId));
+        if (!StorageService.isConfigured(settings)) {
+          return res.status(400).json({
+            success: false,
+            error: 'Cloud storage is not configured or disabled in Settings.',
+          });
+        }
+
+        const uploadRes = await StorageService.uploadGstReport(
+          String(companyId),
+          req.params.id,
+          'gstr1_summary',
+          startStr,
+          endStr,
+          pdfBuffer,
+          settings
+        );
+
+        if (!uploadRes.success) {
+          return res.status(500).json({
+            success: false,
+            error: `Could not upload report to cloud storage — ${uploadRes.error}.`,
+          });
+        }
+
+        return res.json({
+          success: true,
+          signedUrl: uploadRes.signedUrl,
+          cloudPath: uploadRes.path,
+          expiresAt: uploadRes.expiresAt,
+          filename,
+          fileSizeBytes: pdfBuffer.length,
         });
       }
 
-      const uploadRes = await StorageService.uploadGstReport(
-        String(companyId),
-        req.params.id,
-        'gstr1_summary',
-        startStr,
-        endStr,
-        pdfBuffer,
-        settings
-      );
-
-      if (!uploadRes.success) {
-        return res.status(500).json({
-          success: false,
-          error: `Could not upload report to cloud storage — ${uploadRes.error}.`,
-        });
-      }
-
-      return res.json({
-        success: true,
-        signedUrl: uploadRes.signedUrl,
-        cloudPath: uploadRes.path,
-        expiresAt: uploadRes.expiresAt,
-        filename,
-        fileSizeBytes: pdfBuffer.length,
-      });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      return res.send(pdfBuffer);
     }
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(pdfBuffer);
+    // Universal fallback: render high-resolution printable report HTML with toolbar
+    const html = await PDFGenerator.renderCustomerGstReportHtml(summary, party, company as any, label);
+    const finalHtml = PDFGenerator.injectPreviewToolbar(html, {
+      title: `Party GST Summary - ${party.name}`,
+      subtitle: `${company.tradeName || company.legalName} • Period: ${label}`,
+      badge: 'GSTR-1 Summary',
+      filename: `gst_summary_${safeName}_${startStr}_${endStr}`,
+      format: 'a4',
+      autoPrint: req.query.autoprint === 'true',
+    });
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(finalHtml);
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -387,54 +409,76 @@ router.get('/:id/purchase-summary/pdf', async (req, res) => {
 
     const summary = await repos.purchases.getPartyPurchaseSummary(String(companyId), req.params.id, { startDate, endDate });
     const { PDFGenerator } = await import('../services/pdfGenerator');
-    const pdfBuffer = await PDFGenerator.generateSupplierItcReportPdfBuffer(summary, party, company as any, label);
+    
+    let pdfBuffer: Buffer | null = null;
+    try {
+      pdfBuffer = await PDFGenerator.generateSupplierItcReportPdfBuffer(summary, party, company as any, label);
+    } catch (pdfErr: any) {
+      console.warn('[PartyRoutes] Puppeteer supplier ITC report render notice:', pdfErr.message);
+    }
 
     const safeName = party.name.replace(/[^a-zA-Z0-9_-]/g, '_');
     const startStr = startDate ? startDate.toISOString().split('T')[0] : 'all';
     const endStr = endDate ? endDate.toISOString().split('T')[0] : 'time';
     const filename = `itc_summary_${safeName}_${startStr}_${endStr}.pdf`;
 
-    // Opt-in Cloud Storage Upload for Purchase ITC Report
-    const wantsCloud = req.query.uploadToCloud === 'true' || (req.query as any).cloudUpload === 'true';
-    if (wantsCloud) {
-      const settings = await repos.settings.getSettings(String(companyId));
-      if (!StorageService.isConfigured(settings)) {
-        return res.status(400).json({
-          success: false,
-          error: 'Cloud storage is not configured or disabled in Settings.',
+    if (pdfBuffer) {
+      // Opt-in Cloud Storage Upload for Purchase ITC Report
+      const wantsCloud = req.query.uploadToCloud === 'true' || (req.query as any).cloudUpload === 'true';
+      if (wantsCloud) {
+        const settings = await repos.settings.getSettings(String(companyId));
+        if (!StorageService.isConfigured(settings)) {
+          return res.status(400).json({
+            success: false,
+            error: 'Cloud storage is not configured or disabled in Settings.',
+          });
+        }
+
+        const uploadRes = await StorageService.uploadGstReport(
+          String(companyId),
+          req.params.id,
+          'itc_summary',
+          startStr,
+          endStr,
+          pdfBuffer,
+          settings
+        );
+
+        if (!uploadRes.success) {
+          return res.status(500).json({
+            success: false,
+            error: `Could not upload report to cloud storage — ${uploadRes.error}.`,
+          });
+        }
+
+        return res.json({
+          success: true,
+          signedUrl: uploadRes.signedUrl,
+          cloudPath: uploadRes.path,
+          expiresAt: uploadRes.expiresAt,
+          filename,
+          fileSizeBytes: pdfBuffer.length,
         });
       }
 
-      const uploadRes = await StorageService.uploadGstReport(
-        String(companyId),
-        req.params.id,
-        'itc_summary',
-        startStr,
-        endStr,
-        pdfBuffer,
-        settings
-      );
-
-      if (!uploadRes.success) {
-        return res.status(500).json({
-          success: false,
-          error: `Could not upload report to cloud storage — ${uploadRes.error}.`,
-        });
-      }
-
-      return res.json({
-        success: true,
-        signedUrl: uploadRes.signedUrl,
-        cloudPath: uploadRes.path,
-        expiresAt: uploadRes.expiresAt,
-        filename,
-        fileSizeBytes: pdfBuffer.length,
-      });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      return res.send(pdfBuffer);
     }
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(pdfBuffer);
+    // Universal fallback: render high-resolution printable report HTML with toolbar
+    const html = await PDFGenerator.renderSupplierItcReportHtml(summary, party, company as any, label);
+    const finalHtml = PDFGenerator.injectPreviewToolbar(html, {
+      title: `Supplier ITC Summary - ${party.name}`,
+      subtitle: `${company.tradeName || company.legalName} • Period: ${label}`,
+      badge: 'Inward ITC Summary',
+      filename: `itc_summary_${safeName}_${startStr}_${endStr}`,
+      format: 'a4',
+      autoPrint: req.query.autoprint === 'true',
+    });
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(finalHtml);
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }

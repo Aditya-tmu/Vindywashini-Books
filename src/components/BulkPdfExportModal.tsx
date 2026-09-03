@@ -109,6 +109,27 @@ export const BulkPdfExportModal: React.FC<BulkPdfExportModalProps> = ({
   const title = isCustomer ? 'Print All Invoices (Bulk PDF)' : 'Print All Purchase Bills (Bulk PDF)';
   const recordLabel = isCustomer ? 'Sales Invoices' : 'Purchase Bills';
 
+  const handleOpenBulkPreview = () => {
+    if (!activeCompany || !party) return;
+    const previewUrl = isCustomer
+      ? api.getPartyBulkInvoicesPreviewHtmlUrl(
+          party._id,
+          activeCompany._id,
+          dateRange,
+          dateRange === 'custom' ? startDate : undefined,
+          dateRange === 'custom' ? endDate : undefined
+        )
+      : api.getPartyBulkPurchasesPreviewHtmlUrl(
+          party._id,
+          activeCompany._id,
+          dateRange,
+          dateRange === 'custom' ? startDate : undefined,
+          dateRange === 'custom' ? endDate : undefined
+        );
+    window.open(previewUrl, '_blank');
+    showToast('Opened consolidated invoices in new tab! Click "Download PDF" or "Print" in top bar.', 'info');
+  };
+
   const handleDownloadBulkPdf = async () => {
     if (!activeCompany || !party) return;
     try {
@@ -157,7 +178,7 @@ export const BulkPdfExportModal: React.FC<BulkPdfExportModalProps> = ({
         }
       }
 
-      // 2. Download local PDF file
+      // 2. Download local PDF file with automatic fallback to printable view
       const downloadUrl = isCustomer
         ? api.getPartyBulkInvoicesPdfUrl(
             party._id,
@@ -174,8 +195,13 @@ export const BulkPdfExportModal: React.FC<BulkPdfExportModalProps> = ({
             dateRange === 'custom' ? endDate : undefined
           );
 
-      await api.downloadPdfFromUrl(downloadUrl, filename);
-      showToast(`Consolidated PDF saved locally: ${filename}`, 'success');
+      try {
+        await api.downloadPdfFromUrl(downloadUrl, filename);
+        showToast(`Consolidated PDF saved locally: ${filename}`, 'success');
+      } catch (dlErr: any) {
+        console.warn('Direct PDF binary download note, opening printable browser view:', dlErr);
+        handleOpenBulkPreview();
+      }
 
       if (!uploadToCloud) {
         onClose();
@@ -418,18 +444,30 @@ export const BulkPdfExportModal: React.FC<BulkPdfExportModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-slate-850 border-t border-slate-800 flex justify-end gap-3">
+        <div className="p-4 bg-slate-850 border-t border-slate-800 flex items-center justify-between gap-3">
           <button
             type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition"
+            onClick={handleOpenBulkPreview}
+            disabled={isLoadingCount || recordCount === 0}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 transition disabled:opacity-40"
+            title="Open printable consolidated multi-page document in a new tab"
           >
-            {cloudResult ? 'Close' : 'Cancel'}
+            <Printer className="w-3.5 h-3.5 text-slate-400" />
+            <span>Open Print View (New Tab)</span>
           </button>
-          <button
-            type="button"
-            onClick={handleDownloadBulkPdf}
-            disabled={isGeneratingPdf || isLoadingCount || recordCount === 0}
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs font-semibold transition"
+            >
+              {cloudResult ? 'Close' : 'Cancel'}
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadBulkPdf}
+              disabled={isGeneratingPdf || isLoadingCount || recordCount === 0}
             className={`flex items-center gap-2 px-5 py-2 rounded-xl text-white text-xs font-bold shadow-lg transition active:scale-95 disabled:opacity-50 ${
               isCustomer
                 ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-950'
@@ -448,6 +486,7 @@ export const BulkPdfExportModal: React.FC<BulkPdfExportModalProps> = ({
               </>
             )}
           </button>
+          </div>
         </div>
       </div>
     </div>

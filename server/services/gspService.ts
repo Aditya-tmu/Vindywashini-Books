@@ -1,5 +1,4 @@
-import { Settings } from '../models/Settings';
-import { Company } from '../models/Company';
+import { getRepositories } from '../repositories/factory';
 import { GSTR1Data } from './gstEngine';
 
 export interface GSPPushResult {
@@ -16,7 +15,8 @@ export class GSPService {
    * Check if GSP direct filing is enabled and configured
    */
   public static async isGspConfigured(companyId: string): Promise<boolean> {
-    const settings = await Settings.findOne({ companyId });
+    const repos = getRepositories();
+    const settings = await repos.settings.getSettings(companyId);
     if (!settings || !settings.gsp) return false;
     return Boolean(settings.gsp.enabled && settings.gsp.clientId && settings.gsp.clientSecret);
   }
@@ -28,8 +28,11 @@ export class GSPService {
     companyId: string,
     gstr1Data: GSTR1Data
   ): Promise<GSPPushResult> {
-    const settings = await Settings.findOne({ companyId });
-    const company = await Company.findById(companyId);
+    const repos = getRepositories();
+    const [settings, company] = await Promise.all([
+      repos.settings.getSettings(companyId),
+      repos.companies.findById(companyId),
+    ]);
 
     if (!settings || !settings.gsp || !settings.gsp.enabled) {
       return {

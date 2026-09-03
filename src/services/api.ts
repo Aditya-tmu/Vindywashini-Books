@@ -504,12 +504,26 @@ export const api = {
     if (toDate) params.append('toDate', toDate);
     return `${API_BASE}/invoices/party/${partyId}/bulk-pdf?${params.toString()}`;
   },
+  getPartyBulkInvoicesPreviewHtmlUrl: (partyId: string, companyId: string, range?: string, fromDate?: string, toDate?: string) => {
+    const params = new URLSearchParams({ companyId });
+    if (range) params.append('range', range);
+    if (fromDate) params.append('fromDate', fromDate);
+    if (toDate) params.append('toDate', toDate);
+    return `${API_BASE}/invoices/party/${partyId}/bulk-preview-html?${params.toString()}`;
+  },
   getPartyBulkPurchasesPdfUrl: (partyId: string, companyId: string, range?: string, fromDate?: string, toDate?: string) => {
     const params = new URLSearchParams({ companyId });
     if (range) params.append('range', range);
     if (fromDate) params.append('fromDate', fromDate);
     if (toDate) params.append('toDate', toDate);
     return `${API_BASE}/purchases/party/${partyId}/bulk-pdf?${params.toString()}`;
+  },
+  getPartyBulkPurchasesPreviewHtmlUrl: (partyId: string, companyId: string, range?: string, fromDate?: string, toDate?: string) => {
+    const params = new URLSearchParams({ companyId });
+    if (range) params.append('range', range);
+    if (fromDate) params.append('fromDate', fromDate);
+    if (toDate) params.append('toDate', toDate);
+    return `${API_BASE}/purchases/party/${partyId}/bulk-preview-html?${params.toString()}`;
   },
   getPartyGstReportPdfUrl: (partyId: string, companyId: string, range?: string, fromDate?: string, toDate?: string) => {
     const params = new URLSearchParams({ companyId });
