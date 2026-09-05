@@ -196,7 +196,7 @@ export class PDFGenerator {
     }
     .invoice-card {
       width: 100%;
-      min-height: calc(297mm - 16mm);
+      min-height: calc(297mm - 24mm);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -239,7 +239,9 @@ export class PDFGenerator {
       }
       .invoice-card {
         width: 100% !important;
-        min-height: calc(297mm - 16mm) !important;
+        min-height: 0 !important;
+        height: auto !important;
+        max-height: 275mm !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;
@@ -583,7 +585,7 @@ export class PDFGenerator {
     }
     .invoice-card {
       width: 100%;
-      min-height: calc(297mm - 16mm);
+      min-height: calc(297mm - 24mm);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -626,7 +628,9 @@ export class PDFGenerator {
       }
       .invoice-card {
         width: 100% !important;
-        min-height: calc(297mm - 16mm) !important;
+        min-height: 0 !important;
+        height: auto !important;
+        max-height: 275mm !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;
@@ -1399,7 +1403,7 @@ export class PDFGenerator {
     }
     .invoice-page {
       width: 100%;
-      min-height: calc(297mm - 16mm);
+      min-height: 0;
       box-sizing: border-box;
       background: #fff;
       page-break-after: always;
@@ -1415,7 +1419,7 @@ export class PDFGenerator {
     }
     .invoice-card {
       width: 100%;
-      min-height: calc(297mm - 16mm);
+      min-height: calc(297mm - 24mm);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -1468,7 +1472,9 @@ export class PDFGenerator {
       }
       .invoice-page {
         width: 100% !important;
-        min-height: calc(297mm - 16mm) !important;
+        min-height: 0 !important;
+        height: auto !important;
+        max-height: 275mm !important;
         margin: 0 !important;
         padding: 0 !important;
         box-shadow: none !important;
@@ -1483,7 +1489,9 @@ export class PDFGenerator {
       }
       .invoice-card {
         width: 100% !important;
-        min-height: calc(297mm - 16mm) !important;
+        min-height: 0 !important;
+        height: auto !important;
+        max-height: 275mm !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;
@@ -1567,7 +1575,7 @@ export class PDFGenerator {
     }
     .invoice-page {
       width: 100%;
-      min-height: calc(297mm - 16mm);
+      min-height: 0;
       box-sizing: border-box;
       background: #fff;
       page-break-after: always;
@@ -1583,7 +1591,7 @@ export class PDFGenerator {
     }
     .invoice-card {
       width: 100%;
-      min-height: calc(297mm - 16mm);
+      min-height: calc(297mm - 24mm);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -1636,7 +1644,9 @@ export class PDFGenerator {
       }
       .invoice-page {
         width: 100% !important;
-        min-height: calc(297mm - 16mm) !important;
+        min-height: 0 !important;
+        height: auto !important;
+        max-height: 275mm !important;
         margin: 0 !important;
         padding: 0 !important;
         box-shadow: none !important;
@@ -1651,7 +1661,9 @@ export class PDFGenerator {
       }
       .invoice-card {
         width: 100% !important;
-        min-height: calc(297mm - 16mm) !important;
+        min-height: 0 !important;
+        height: auto !important;
+        max-height: 275mm !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;
@@ -1762,8 +1774,6 @@ export class PDFGenerator {
 
       // Determine dimensions based on template format
       var isA5 = '${pdfFormat}'.toLowerCase() === 'a5';
-      var targetWidth = isA5 ? '559px' : '794px';
-      var targetWindowWidth = isA5 ? 600 : 800;
 
       // Save original styles
       var origDocStyle = printableDoc ? printableDoc.getAttribute('style') : null;
@@ -1773,13 +1783,13 @@ export class PDFGenerator {
       var origCardStyles = [];
       allCards.forEach(function(card, idx) {
         origCardStyles[idx] = card.getAttribute('style');
-        card.style.margin = '0 auto';
+        card.style.margin = '0px';
         card.style.boxShadow = 'none';
         card.style.borderRadius = '0px';
         card.style.overflow = 'visible';
         card.style.boxSizing = 'border-box';
-        card.style.width = targetWidth;
-        card.style.maxWidth = targetWidth;
+        card.style.width = '100%';
+        card.style.maxWidth = '100%';
       });
 
       var pages = document.querySelectorAll('.invoice-page');
@@ -1788,31 +1798,31 @@ export class PDFGenerator {
         origPageStyles[i] = p.getAttribute('style');
         p.style.marginBottom = '0px';
         p.style.boxShadow = 'none';
-        p.style.margin = '0 auto';
+        p.style.margin = '0px';
         p.style.padding = '0px';
-        p.style.width = targetWidth;
-        p.style.maxWidth = targetWidth;
+        p.style.width = '100%';
+        p.style.maxWidth = '100%';
         p.style.boxSizing = 'border-box';
       });
 
       if (printableDoc) {
         printableDoc.style.padding = '0px';
-        printableDoc.style.margin = '0 auto';
-        printableDoc.style.maxWidth = targetWidth;
-        printableDoc.style.width = targetWidth;
+        printableDoc.style.margin = '0px';
+        printableDoc.style.maxWidth = '100%';
+        printableDoc.style.width = '100%';
         printableDoc.style.boxSizing = 'border-box';
       } else if (singleCard) {
-        singleCard.style.margin = '0 auto';
+        singleCard.style.margin = '0px';
         singleCard.style.boxShadow = 'none';
         singleCard.style.borderRadius = '0px';
         singleCard.style.overflow = 'visible';
         singleCard.style.boxSizing = 'border-box';
-        singleCard.style.maxWidth = targetWidth;
-        singleCard.style.width = targetWidth;
+        singleCard.style.maxWidth = '100%';
+        singleCard.style.width = '100%';
       }
 
       var opt = {
-        margin: [2, 2, 2, 2],
+        margin: [3, 3, 3, 3],
         filename: '${safeFilename}.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         enableLinks: false,
@@ -1822,7 +1832,6 @@ export class PDFGenerator {
           logging: false,
           scrollX: 0,
           scrollY: 0,
-          windowWidth: targetWindowWidth,
         },
         jsPDF: {
           unit: 'mm',
@@ -1863,17 +1872,27 @@ export class PDFGenerator {
         btn.disabled = false;
       }
 
-      if (window.html2pdf) {
-        window.html2pdf().set(opt).from(target).save().then(function() {
-          restoreStyles();
-        }).catch(function(err) {
-          console.warn('html2pdf notice, opening print dialog:', err);
+      var runHtml2Pdf = function() {
+        if (window.html2pdf) {
+          window.html2pdf().set(opt).from(target).save().then(function() {
+            restoreStyles();
+          }).catch(function(err) {
+            console.warn('html2pdf notice, opening print dialog:', err);
+            restoreStyles();
+            window.print();
+          });
+        } else {
           restoreStyles();
           window.print();
+        }
+      };
+
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(function() {
+          setTimeout(runHtml2Pdf, 100);
         });
       } else {
-        restoreStyles();
-        window.print();
+        setTimeout(runHtml2Pdf, 100);
       }
     }
 
@@ -1990,7 +2009,7 @@ export class PDFGenerator {
     }
     .report-card {
       width: 100%;
-      min-height: calc(297mm - 16mm);
+      min-height: calc(297mm - 24mm);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -2033,7 +2052,9 @@ export class PDFGenerator {
       }
       .report-card {
         width: 100% !important;
-        min-height: calc(297mm - 16mm) !important;
+        min-height: 0 !important;
+        height: auto !important;
+        max-height: 275mm !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;
@@ -2264,7 +2285,7 @@ export class PDFGenerator {
     }
     .report-card {
       width: 100%;
-      min-height: calc(297mm - 16mm);
+      min-height: calc(297mm - 24mm);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -2307,7 +2328,9 @@ export class PDFGenerator {
       }
       .report-card {
         width: 100% !important;
-        min-height: calc(297mm - 16mm) !important;
+        min-height: 0 !important;
+        height: auto !important;
+        max-height: 275mm !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;

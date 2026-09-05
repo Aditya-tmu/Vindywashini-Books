@@ -199,8 +199,8 @@ export const BulkPdfExportModal: React.FC<BulkPdfExportModalProps> = ({
         await api.downloadPdfFromUrl(downloadUrl, filename);
         showToast(`Consolidated PDF saved locally: ${filename}`, 'success');
       } catch (dlErr: any) {
-        console.warn('Direct PDF binary download note, opening printable browser view:', dlErr);
-        handleOpenBulkPreview();
+        console.error('Bulk PDF download error:', dlErr);
+        showToast(dlErr.message || 'Error generating bulk PDF. You can also use "Open Print View".', 'error');
       }
 
       if (!uploadToCloud) {
