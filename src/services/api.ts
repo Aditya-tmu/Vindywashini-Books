@@ -578,7 +578,7 @@ export const api = {
     }
 
     // Response is HTML (e.g. Render cloud host where headless Chrome is unavailable)
-    // Convert the HTML into a genuine, valid PDF binary on the client side!
+    // Convert the HTML into a genuine, valid PDF binary using a hidden iframe where Tailwind CDN and full styles execute
     try {
       // Dynamically load html2pdf from CDN if not already present
       const getHtml2Pdf = async (): Promise<any> => {
@@ -601,60 +601,87 @@ export const api = {
         });
       };
 
-      const html2pdf = await getHtml2Pdf();
-      if (!html2pdf) {
-        throw new Error('html2pdf library could not be loaded.');
+      const parentHtml2Pdf = await getHtml2Pdf();
+
+      // Create a hidden rendering iframe positioned at top-left with opacity 0 (NOT offscreen -9999px)
+      // This ensures all text glyphs, fonts, and Tailwind CDN scripts execute properly in a real browsing context.
+      const iframe = document.createElement('iframe');
+      iframe.id = 'pdf-render-iframe';
+      iframe.style.position = 'fixed';
+      iframe.style.top = '0';
+      iframe.style.left = '0';
+      iframe.style.width = '800px';
+      iframe.style.height = '1150px';
+      iframe.style.opacity = '0';
+      iframe.style.pointerEvents = 'none';
+      iframe.style.zIndex = '-99999';
+      iframe.style.border = 'none';
+      document.body.appendChild(iframe);
+
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) {
+        iframe.remove();
+        window.open(url, '_blank');
+        return;
       }
 
-      // Create an offscreen sandbox with standard A4 canvas width (794px at 96 DPI)
-      const sandbox = document.createElement('div');
-      sandbox.id = 'pdf-render-sandbox';
-      sandbox.style.position = 'fixed';
-      sandbox.style.left = '-9999px';
-      sandbox.style.top = '0';
-      sandbox.style.width = '794px';
-      sandbox.style.background = '#ffffff';
-      sandbox.style.zIndex = '-99999';
-      sandbox.innerHTML = rawText;
+      iframeDoc.open();
+      iframeDoc.write(rawText);
+      iframeDoc.close();
 
-      // Remove interactive toolbar and no-print elements
-      const toolbar = sandbox.querySelector('#preview-action-toolbar');
-      if (toolbar) toolbar.remove();
-      const noPrintEls = sandbox.querySelectorAll('.no-print');
-      noPrintEls.forEach((el) => el.remove());
-
-      // Flatten screen styling inside sandbox for pristine 1:1 A4 capture
-      const printableDoc = sandbox.querySelector('#printable-document') as HTMLElement | null;
-      if (printableDoc) {
-        printableDoc.style.padding = '0px';
-        printableDoc.style.margin = '0px';
-        printableDoc.style.width = '100%';
-        printableDoc.style.maxWidth = '100%';
-      }
-      const singleCard = (sandbox.querySelector('.invoice-card') || sandbox.querySelector('.report-card')) as HTMLElement | null;
-      if (!printableDoc && singleCard) {
-        singleCard.style.margin = '0px';
-        singleCard.style.boxShadow = 'none';
-        singleCard.style.width = '100%';
-        singleCard.style.maxWidth = '100%';
-      }
-      const pages = sandbox.querySelectorAll('.invoice-page');
-      pages.forEach((p) => {
-        (p as HTMLElement).style.margin = '0px';
-        (p as HTMLElement).style.marginBottom = '0px';
-        (p as HTMLElement).style.boxShadow = 'none';
-        (p as HTMLElement).style.width = '100%';
+      // Wait for iframe scripts (Tailwind CDN, html2pdf) to load and render DOM data
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(resolve, 600);
+        iframe.onload = () => {
+          clearTimeout(timer);
+          setTimeout(resolve, 350);
+        };
       });
 
-      document.body.appendChild(sandbox);
+      // Remove interactive toolbar and no-print elements inside the iframe
+      const toolbar = iframeDoc.getElementById('preview-action-toolbar');
+      if (toolbar) toolbar.remove();
+      iframeDoc.querySelectorAll('.no-print').forEach((el) => el.remove());
 
-      const targetEl =
-        printableDoc ||
-        singleCard ||
-        sandbox;
+      // Prepare DOM elements inside iframe for standard A4 capture
+      const printableDoc = iframeDoc.getElementById('printable-document') as HTMLElement | null;
+      if (printableDoc) {
+        printableDoc.style.padding = '0px';
+        printableDoc.style.margin = '0 auto';
+        printableDoc.style.width = '794px';
+        printableDoc.style.maxWidth = '794px';
+        printableDoc.style.boxSizing = 'border-box';
+      }
+
+      const allCards = iframeDoc.querySelectorAll('.invoice-card, .report-card');
+      allCards.forEach((card) => {
+        const el = card as HTMLElement;
+        el.style.margin = '0 auto';
+        el.style.boxShadow = 'none';
+        el.style.borderRadius = '0px';
+        el.style.overflow = 'visible';
+        el.style.boxSizing = 'border-box';
+        el.style.width = '794px';
+        el.style.maxWidth = '794px';
+      });
+
+      const pages = iframeDoc.querySelectorAll('.invoice-page');
+      pages.forEach((p) => {
+        const el = p as HTMLElement;
+        el.style.margin = '0 auto';
+        el.style.marginBottom = '0px';
+        el.style.boxShadow = 'none';
+        el.style.padding = '0px';
+        el.style.width = '794px';
+        el.style.maxWidth = '794px';
+        el.style.boxSizing = 'border-box';
+      });
+
+      const singleCard = allCards.length > 0 ? (allCards[0] as HTMLElement) : null;
+      const targetEl = printableDoc || singleCard || iframeDoc.body;
 
       const opt = {
-        margin: 0,
+        margin: [2, 2, 2, 2],
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
         enableLinks: false,
@@ -664,6 +691,7 @@ export const api = {
           logging: false,
           scrollX: 0,
           scrollY: 0,
+          windowWidth: 800,
         },
         jsPDF: {
           unit: 'mm',
@@ -677,19 +705,24 @@ export const api = {
         },
       };
 
-      const pdfBlob = await html2pdf().set(opt).from(targetEl).outputPdf('blob');
-      document.body.removeChild(sandbox);
+      const iframeWin = iframe.contentWindow as any;
+      const html2pdfLib = iframeWin?.html2pdf || (window as any).html2pdf || parentHtml2Pdf;
+
+      const pdfBlob = await html2pdfLib().set(opt).from(targetEl).outputPdf('blob');
+      iframe.remove();
 
       // Trigger download of real PDF blob
-      const downloadUrl = URL.createObjectURL(pdfBlob);
+      const downloadBlobUrl = URL.createObjectURL(pdfBlob);
       const link = document.createElement('a');
-      link.href = downloadUrl;
+      link.href = downloadBlobUrl;
       link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(downloadUrl);
+      URL.revokeObjectURL(downloadBlobUrl);
     } catch (err: any) {
+      const existingIframe = document.getElementById('pdf-render-iframe');
+      if (existingIframe) existingIframe.remove();
       console.warn('Client html2pdf conversion error, opening printable view in tab:', err);
       window.open(url, '_blank');
       throw new Error('Opened printable document in new tab. You can save or print directly from the top bar.');

@@ -19,7 +19,13 @@ const toEntity = (doc: any): IPurchaseBillEntity => {
 
 export class MongoPurchaseBillRepository implements IPurchaseBillRepository {
   async findByCompany(companyId: string, filter: any = {}): Promise<IPurchaseBillEntity[]> {
-    const query: any = { companyId, ...filter };
+    const { startDate, endDate, ...rest } = filter;
+    const query: any = { companyId, ...rest };
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) query.date.$gte = startDate;
+      if (endDate) query.date.$lte = endDate;
+    }
     const docs = await PurchaseBill.find(query).sort({ date: -1, createdAt: -1 });
     return docs.map(toEntity);
   }
@@ -35,11 +41,17 @@ export class MongoPurchaseBillRepository implements IPurchaseBillRepository {
   }
 
   async findByParty(companyId: string, supplierId: string, filter: any = {}): Promise<IPurchaseBillEntity[]> {
+    const { startDate, endDate, ...rest } = filter;
     const query: any = {
       companyId,
       supplierId,
-      ...filter,
+      ...rest,
     };
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) query.date.$gte = startDate;
+      if (endDate) query.date.$lte = endDate;
+    }
     const docs = await PurchaseBill.find(query).sort({ date: -1, createdAt: -1 });
     return docs.map(toEntity);
   }

@@ -19,7 +19,13 @@ const toEntity = (doc: any): IInvoiceEntity => {
 
 export class MongoInvoiceRepository implements IInvoiceRepository {
   async findByCompany(companyId: string, filter: any = {}): Promise<IInvoiceEntity[]> {
-    const query: any = { companyId, ...filter };
+    const { startDate, endDate, ...rest } = filter;
+    const query: any = { companyId, ...rest };
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) query.date.$gte = startDate;
+      if (endDate) query.date.$lte = endDate;
+    }
     const docs = await Invoice.find(query).sort({ date: -1, createdAt: -1 });
     return docs.map(toEntity);
   }
@@ -35,11 +41,17 @@ export class MongoInvoiceRepository implements IInvoiceRepository {
   }
 
   async findByParty(companyId: string, partyId: string, filter: any = {}): Promise<IInvoiceEntity[]> {
+    const { startDate, endDate, ...rest } = filter;
     const query: any = {
       companyId,
       customerId: partyId,
-      ...filter,
+      ...rest,
     };
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) query.date.$gte = startDate;
+      if (endDate) query.date.$lte = endDate;
+    }
     const docs = await Invoice.find(query).sort({ date: -1, createdAt: -1 });
     return docs.map(toEntity);
   }

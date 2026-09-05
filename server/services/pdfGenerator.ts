@@ -215,12 +215,14 @@ export class PDFGenerator {
         background: #f1f5f9;
       }
       .invoice-card {
+        width: 100%;
         max-width: 210mm;
         margin: 20px auto 40px auto;
         box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         border: 2px solid #064e3b;
         border-radius: 8px;
-        overflow: hidden;
+        overflow: visible;
+        box-sizing: border-box;
       }
     }
 
@@ -256,7 +258,7 @@ export class PDFGenerator {
   </style>
 </head>
 <body class="p-0 bg-white text-gray-900 w-full">
-  <div class="invoice-card w-full border-2 border-emerald-900 rounded-xl overflow-hidden bg-white shadow-none">
+  <div class="invoice-card w-full border-2 border-emerald-900 rounded-xl bg-white shadow-none">
 
 
     
@@ -600,12 +602,14 @@ export class PDFGenerator {
         background: #f1f5f9;
       }
       .invoice-card {
+        width: 100%;
         max-width: 210mm;
         margin: 20px auto 40px auto;
         box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         border: 2px solid #334155;
         border-radius: 8px;
-        overflow: hidden;
+        overflow: visible;
+        box-sizing: border-box;
       }
     }
 
@@ -642,7 +646,7 @@ export class PDFGenerator {
 </head>
 
 <body class="p-0 bg-white text-gray-900 w-full">
-  <div class="invoice-card w-full border-2 border-slate-700 rounded-xl overflow-hidden bg-white shadow-none">
+  <div class="invoice-card w-full border-2 border-slate-700 rounded-xl bg-white shadow-none">
 
     
     <!-- Top & Middle Content Container -->
@@ -1756,9 +1760,27 @@ export class PDFGenerator {
       var singleCard = document.querySelector('.invoice-card') || document.querySelector('.report-card');
       var target = printableDoc || singleCard || document.body;
 
-      // Temporarily clear screen preview spacing/shadows for pristine 1:1 A4 capture
+      // Determine dimensions based on template format
+      var isA5 = '${pdfFormat}'.toLowerCase() === 'a5';
+      var targetWidth = isA5 ? '559px' : '794px';
+      var targetWindowWidth = isA5 ? 600 : 800;
+
+      // Save original styles
       var origDocStyle = printableDoc ? printableDoc.getAttribute('style') : null;
       var origCardStyle = (!printableDoc && singleCard) ? singleCard.getAttribute('style') : null;
+
+      var allCards = document.querySelectorAll('.invoice-card, .report-card');
+      var origCardStyles = [];
+      allCards.forEach(function(card, idx) {
+        origCardStyles[idx] = card.getAttribute('style');
+        card.style.margin = '0 auto';
+        card.style.boxShadow = 'none';
+        card.style.borderRadius = '0px';
+        card.style.overflow = 'visible';
+        card.style.boxSizing = 'border-box';
+        card.style.width = targetWidth;
+        card.style.maxWidth = targetWidth;
+      });
 
       var pages = document.querySelectorAll('.invoice-page');
       var origPageStyles = [];
@@ -1766,23 +1788,31 @@ export class PDFGenerator {
         origPageStyles[i] = p.getAttribute('style');
         p.style.marginBottom = '0px';
         p.style.boxShadow = 'none';
-        p.style.margin = '0px';
+        p.style.margin = '0 auto';
+        p.style.padding = '0px';
+        p.style.width = targetWidth;
+        p.style.maxWidth = targetWidth;
+        p.style.boxSizing = 'border-box';
       });
 
       if (printableDoc) {
         printableDoc.style.padding = '0px';
-        printableDoc.style.margin = '0px';
-        printableDoc.style.maxWidth = '100%';
-        printableDoc.style.width = '100%';
+        printableDoc.style.margin = '0 auto';
+        printableDoc.style.maxWidth = targetWidth;
+        printableDoc.style.width = targetWidth;
+        printableDoc.style.boxSizing = 'border-box';
       } else if (singleCard) {
-        singleCard.style.margin = '0px';
+        singleCard.style.margin = '0 auto';
         singleCard.style.boxShadow = 'none';
-        singleCard.style.maxWidth = '100%';
-        singleCard.style.width = '100%';
+        singleCard.style.borderRadius = '0px';
+        singleCard.style.overflow = 'visible';
+        singleCard.style.boxSizing = 'border-box';
+        singleCard.style.maxWidth = targetWidth;
+        singleCard.style.width = targetWidth;
       }
 
       var opt = {
-        margin: 0,
+        margin: [2, 2, 2, 2],
         filename: '${safeFilename}.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         enableLinks: false,
@@ -1792,11 +1822,12 @@ export class PDFGenerator {
           logging: false,
           scrollX: 0,
           scrollY: 0,
+          windowWidth: targetWindowWidth,
         },
         jsPDF: {
           unit: 'mm',
           format: '${pdfFormat}',
-          orientation: 'portrait',
+          orientation: isA5 ? 'landscape' : 'portrait',
           compress: true
         },
         pagebreak: {
@@ -1813,6 +1844,13 @@ export class PDFGenerator {
           if (origCardStyle !== null) singleCard.setAttribute('style', origCardStyle);
           else singleCard.removeAttribute('style');
         }
+        allCards.forEach(function(card, idx) {
+          if (origCardStyles[idx] !== null && origCardStyles[idx] !== undefined) {
+            card.setAttribute('style', origCardStyles[idx]);
+          } else {
+            card.removeAttribute('style');
+          }
+        });
         pages.forEach(function(p, i) {
           if (origPageStyles[i] !== null && origPageStyles[i] !== undefined) {
             p.setAttribute('style', origPageStyles[i]);
@@ -1971,12 +2009,14 @@ export class PDFGenerator {
         background: #f1f5f9;
       }
       .report-card {
+        width: 100%;
         max-width: 210mm;
         margin: 20px auto 40px auto;
         box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         border: 2px solid #064e3b;
         border-radius: 8px;
-        overflow: hidden;
+        overflow: visible;
+        box-sizing: border-box;
       }
     }
 
@@ -2008,7 +2048,7 @@ export class PDFGenerator {
   </style>
 </head>
 <body class="p-0 bg-white text-gray-900 w-full">
-  <div class="report-card w-full border-2 border-emerald-900 rounded-xl overflow-hidden bg-white shadow-none">
+  <div class="report-card w-full border-2 border-emerald-900 rounded-xl bg-white shadow-none">
     <div class="flex-1 flex flex-col">
       <!-- 1. Header Banner -->
       <div class="p-4 bg-gradient-to-r from-emerald-50 via-white to-emerald-50/40 border-b-2 border-emerald-900 flex justify-between items-center gap-4">
@@ -2243,12 +2283,14 @@ export class PDFGenerator {
         background: #f1f5f9;
       }
       .report-card {
+        width: 100%;
         max-width: 210mm;
         margin: 20px auto 40px auto;
         box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         border: 2px solid #334155;
         border-radius: 8px;
-        overflow: hidden;
+        overflow: visible;
+        box-sizing: border-box;
       }
     }
 
@@ -2280,7 +2322,7 @@ export class PDFGenerator {
   </style>
 </head>
 <body class="p-0 bg-white text-gray-900 w-full">
-  <div class="report-card w-full border-2 border-slate-800 rounded-xl overflow-hidden bg-white shadow-none">
+  <div class="report-card w-full border-2 border-slate-800 rounded-xl bg-white shadow-none">
     <div class="flex-1 flex flex-col">
       <!-- 1. Header Banner (NO Business Logo - Internal Audit Format) -->
       <div class="p-4 bg-slate-100 border-b-2 border-slate-800 flex justify-between items-center gap-4">
