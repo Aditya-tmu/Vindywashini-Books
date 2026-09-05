@@ -606,13 +606,13 @@ export const api = {
         throw new Error('html2pdf library could not be loaded.');
       }
 
-      // Create an offscreen sandbox with fixed 1024px canvas to preserve pristine A4 layout
+      // Create an offscreen sandbox with standard A4 canvas width (794px at 96 DPI)
       const sandbox = document.createElement('div');
       sandbox.id = 'pdf-render-sandbox';
       sandbox.style.position = 'fixed';
       sandbox.style.left = '-9999px';
       sandbox.style.top = '0';
-      sandbox.style.width = '1024px';
+      sandbox.style.width = '794px';
       sandbox.style.background = '#ffffff';
       sandbox.style.zIndex = '-99999';
       sandbox.innerHTML = rawText;
@@ -623,12 +623,34 @@ export const api = {
       const noPrintEls = sandbox.querySelectorAll('.no-print');
       noPrintEls.forEach((el) => el.remove());
 
+      // Flatten screen styling inside sandbox for pristine 1:1 A4 capture
+      const printableDoc = sandbox.querySelector('#printable-document') as HTMLElement | null;
+      if (printableDoc) {
+        printableDoc.style.padding = '0px';
+        printableDoc.style.margin = '0px';
+        printableDoc.style.width = '100%';
+        printableDoc.style.maxWidth = '100%';
+      }
+      const singleCard = (sandbox.querySelector('.invoice-card') || sandbox.querySelector('.report-card')) as HTMLElement | null;
+      if (!printableDoc && singleCard) {
+        singleCard.style.margin = '0px';
+        singleCard.style.boxShadow = 'none';
+        singleCard.style.width = '100%';
+        singleCard.style.maxWidth = '100%';
+      }
+      const pages = sandbox.querySelectorAll('.invoice-page');
+      pages.forEach((p) => {
+        (p as HTMLElement).style.margin = '0px';
+        (p as HTMLElement).style.marginBottom = '0px';
+        (p as HTMLElement).style.boxShadow = 'none';
+        (p as HTMLElement).style.width = '100%';
+      });
+
       document.body.appendChild(sandbox);
 
       const targetEl =
-        sandbox.querySelector('#printable-document') ||
-        sandbox.querySelector('.invoice-card') ||
-        sandbox.querySelector('.report-card') ||
+        printableDoc ||
+        singleCard ||
         sandbox;
 
       const opt = {
@@ -642,7 +664,6 @@ export const api = {
           logging: false,
           scrollX: 0,
           scrollY: 0,
-          windowWidth: 1024,
         },
         jsPDF: {
           unit: 'mm',
@@ -652,8 +673,7 @@ export const api = {
         },
         pagebreak: {
           mode: ['css', 'legacy'],
-          before: '.invoice-page',
-          avoid: ['.avoid-break', 'tr'],
+          avoid: ['.avoid-break', 'tr', '.report-card'],
         },
       };
 

@@ -179,7 +179,7 @@ export class PDFGenerator {
   <style>
     @page { 
       size: A4 portrait; 
-      margin: 6mm; 
+      margin: 8mm; 
     }
     * {
       box-sizing: border-box;
@@ -188,74 +188,65 @@ export class PDFGenerator {
       margin: 0;
       padding: 0;
       width: 100%;
-      background: #f8fafc;
+      background: #fff;
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; 
       color: #111827; 
       font-size: 11px;
       line-height: 1.35;
     }
-    #printable-document {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      padding: 16px 8px 40px 8px;
-      box-sizing: border-box;
-      overflow-x: auto;
-    }
     .invoice-card {
       width: 100%;
-      max-width: 210mm;
-      min-width: 760px;
+      min-height: calc(297mm - 16mm);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       box-sizing: border-box;
       background: #fff;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      border: 2px solid #064e3b;
-      border-radius: 12px;
-      overflow: hidden;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .avoid-break {
       page-break-inside: avoid;
       break-inside: avoid;
     }
 
+    @media screen {
+      body {
+        background: #f1f5f9;
+      }
+      .invoice-card {
+        max-width: 210mm;
+        margin: 20px auto 40px auto;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 2px solid #064e3b;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+    }
+
     @media print {
-      html, body { 
-        margin: 0 !important;
-        padding: 0 !important;
-        background: #fff !important;
+      body { 
         -webkit-print-color-adjust: exact !important; 
         print-color-adjust: exact !important; 
-        height: auto !important;
-      }
-      .no-print, #preview-action-toolbar {
-        display: none !important;
-      }
-      #printable-document {
-        display: block !important;
-        width: 100% !important;
-        max-width: 100% !important;
+        background: #fff !important; 
         margin: 0 !important;
         padding: 0 !important;
-        overflow: visible !important;
+      }
+      .no-print, #preview-action-toolbar { 
+        display: none !important; 
       }
       .invoice-card {
         width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        height: auto !important;
-        display: block !important;
+        min-height: calc(297mm - 16mm) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        box-shadow: none !important;
+        border: 2px solid #064e3b !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
-        page-break-after: avoid !important;
-        break-after: avoid !important;
-        box-sizing: border-box !important;
-        box-shadow: none !important;
-        border-width: 1.5px !important;
-        border-radius: 6px !important;
       }
       .avoid-break {
         page-break-inside: avoid !important;
@@ -264,8 +255,7 @@ export class PDFGenerator {
     }
   </style>
 </head>
-<body class="p-0 bg-slate-50 text-gray-900 w-full">
-  <div id="printable-document">
+<body class="p-0 bg-white text-gray-900 w-full">
   <div class="invoice-card w-full border-2 border-emerald-900 rounded-xl overflow-hidden bg-white shadow-none">
 
 
@@ -495,7 +485,6 @@ export class PDFGenerator {
       </div>
     </div>
   </div>
-  </div>
 </body>
 </html>
     `;
@@ -575,7 +564,7 @@ export class PDFGenerator {
   <style>
     @page { 
       size: A4 portrait; 
-      margin: 6mm; 
+      margin: 8mm; 
     }
     * {
       box-sizing: border-box;
@@ -584,74 +573,65 @@ export class PDFGenerator {
       margin: 0;
       padding: 0;
       width: 100%;
-      background: #f8fafc;
+      background: #fff;
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; 
       color: #111827; 
       font-size: 11px;
       line-height: 1.35;
     }
-    #printable-document {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      padding: 16px 8px 40px 8px;
-      box-sizing: border-box;
-      overflow-x: auto;
-    }
     .invoice-card {
       width: 100%;
-      max-width: 210mm;
-      min-width: 760px;
+      min-height: calc(297mm - 16mm);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       box-sizing: border-box;
       background: #fff;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      border: 2px solid #334155;
-      border-radius: 12px;
-      overflow: hidden;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .avoid-break {
       page-break-inside: avoid;
       break-inside: avoid;
     }
 
+    @media screen {
+      body {
+        background: #f1f5f9;
+      }
+      .invoice-card {
+        max-width: 210mm;
+        margin: 20px auto 40px auto;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 2px solid #334155;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+    }
+
     @media print {
-      html, body { 
-        margin: 0 !important;
-        padding: 0 !important;
-        background: #fff !important;
+      body { 
         -webkit-print-color-adjust: exact !important; 
         print-color-adjust: exact !important; 
-        height: auto !important;
-      }
-      .no-print, #preview-action-toolbar {
-        display: none !important;
-      }
-      #printable-document {
-        display: block !important;
-        width: 100% !important;
-        max-width: 100% !important;
+        background: #fff !important; 
         margin: 0 !important;
         padding: 0 !important;
-        overflow: visible !important;
+      }
+      .no-print, #preview-action-toolbar { 
+        display: none !important; 
       }
       .invoice-card {
         width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        height: auto !important;
-        display: block !important;
+        min-height: calc(297mm - 16mm) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        box-shadow: none !important;
+        border: 2px solid #334155 !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
-        page-break-after: avoid !important;
-        break-after: avoid !important;
-        box-sizing: border-box !important;
-        box-shadow: none !important;
-        border-width: 1.5px !important;
-        border-radius: 6px !important;
       }
       .avoid-break {
         page-break-inside: avoid !important;
@@ -661,8 +641,7 @@ export class PDFGenerator {
   </style>
 </head>
 
-<body class="p-0 bg-slate-50 text-gray-900 w-full">
-  <div id="printable-document">
+<body class="p-0 bg-white text-gray-900 w-full">
   <div class="invoice-card w-full border-2 border-slate-700 rounded-xl overflow-hidden bg-white shadow-none">
 
     
@@ -835,7 +814,6 @@ export class PDFGenerator {
         <span class="font-mono">FY: ${purchase.financialYear || company.currentFY}</span>
       </div>
     </div>
-  </div>
   </div>
 </body>
 </html>
@@ -1379,9 +1357,8 @@ export class PDFGenerator {
     for (const inv of invoices) {
       const fullHtml = await this.renderA4Html(inv, company);
       const bodyMatch = fullHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      let bodyContent = bodyMatch ? bodyMatch[1] : fullHtml;
-      bodyContent = bodyContent.replace(/<div id="printable-document"[^>]*>/i, '').replace(/<\/div>\s*$/i, '');
-      renderedPages.push(`<div class="invoice-page w-full">${bodyContent}</div>`);
+      const bodyContent = bodyMatch ? bodyMatch[1].trim() : fullHtml.trim();
+      renderedPages.push(`<div class="invoice-page">${bodyContent}</div>`);
     }
 
     return `
@@ -1395,7 +1372,7 @@ export class PDFGenerator {
   <style>
     @page { 
       size: A4 portrait; 
-      margin: 6mm; 
+      margin: 8mm; 
     }
     * {
       box-sizing: border-box;
@@ -1404,7 +1381,7 @@ export class PDFGenerator {
       margin: 0;
       padding: 0;
       width: 100%;
-      background: #f8fafc;
+      background: #fff;
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; 
       color: #111827; 
       font-size: 11px;
@@ -1412,99 +1389,108 @@ export class PDFGenerator {
     }
     #printable-document {
       width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 24px;
-      padding: 20px 8px 40px 8px;
-      box-sizing: border-box;
-      overflow-x: auto;
+      margin: 0;
+      padding: 0;
+      background: #fff;
     }
     .invoice-page {
       width: 100%;
-      max-width: 210mm;
-      min-width: 760px;
+      min-height: calc(297mm - 16mm);
       box-sizing: border-box;
       background: #fff;
+      page-break-after: always;
+      break-after: page;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      margin: 0;
+      padding: 0;
+    }
+    .invoice-page:last-child {
+      page-break-after: avoid;
+      break-after: avoid;
     }
     .invoice-card {
       width: 100%;
+      min-height: calc(297mm - 16mm);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
       box-sizing: border-box;
       background: #fff;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      border-radius: 12px;
-      overflow: hidden;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .avoid-break {
       page-break-inside: avoid;
       break-inside: avoid;
     }
 
+    @media screen {
+      body {
+        background: #f1f5f9;
+      }
+      #printable-document {
+        max-width: 210mm;
+        margin: 0 auto;
+        padding: 20px 0 40px 0;
+        background: transparent;
+      }
+      .invoice-page {
+        margin-bottom: 24px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      }
+      .invoice-page:last-child {
+        margin-bottom: 0;
+      }
+    }
+
     @media print {
-      html, body { 
-        margin: 0 !important;
-        padding: 0 !important;
-        background: #fff !important;
+      body { 
         -webkit-print-color-adjust: exact !important; 
         print-color-adjust: exact !important; 
-        height: auto !important;
+        background: #fff !important; 
+        margin: 0 !important;
+        padding: 0 !important;
       }
       .no-print, #preview-action-toolbar { 
         display: none !important; 
       }
       #printable-document {
-        display: block !important;
         width: 100% !important;
         max-width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: visible !important;
-        gap: 0 !important;
-      }
-      .invoice-page {
-        page-break-after: always !important;
-        break-after: page !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        height: auto !important;
-        box-sizing: border-box !important;
         margin: 0 !important;
         padding: 0 !important;
         background: #fff !important;
       }
-      .invoice-page:last-child,
-      .invoice-page:last-of-type {
+      .invoice-page {
+        width: 100% !important;
+        min-height: calc(297mm - 16mm) !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      .invoice-page:last-child {
         page-break-after: avoid !important;
         break-after: avoid !important;
       }
       .invoice-card {
         width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        height: auto !important;
-        display: block !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-        page-break-after: avoid !important;
-        break-after: avoid !important;
-        box-sizing: border-box !important;
+        min-height: calc(297mm - 16mm) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
         box-shadow: none !important;
-        border-width: 1.5px !important;
-        border-radius: 6px !important;
-      }
-      .avoid-break {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
     }
   </style>
 </head>
-<body class="p-0 bg-slate-100 text-gray-900 w-full">
+<body class="p-0 bg-white text-gray-900 w-full">
   <div id="printable-document">
     ${renderedPages.join('\n')}
   </div>
@@ -1539,9 +1525,8 @@ export class PDFGenerator {
     for (const p of purchases) {
       const fullHtml = await this.renderPurchaseBillHtml(p, company);
       const bodyMatch = fullHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      let bodyContent = bodyMatch ? bodyMatch[1] : fullHtml;
-      bodyContent = bodyContent.replace(/<div id="printable-document"[^>]*>/i, '').replace(/<\/div>\s*$/i, '');
-      renderedPages.push(`<div class="invoice-page w-full">${bodyContent}</div>`);
+      const bodyContent = bodyMatch ? bodyMatch[1].trim() : fullHtml.trim();
+      renderedPages.push(`<div class="invoice-page">${bodyContent}</div>`);
     }
 
     return `
@@ -1555,7 +1540,7 @@ export class PDFGenerator {
   <style>
     @page { 
       size: A4 portrait; 
-      margin: 6mm; 
+      margin: 8mm; 
     }
     * {
       box-sizing: border-box;
@@ -1564,7 +1549,7 @@ export class PDFGenerator {
       margin: 0;
       padding: 0;
       width: 100%;
-      background: #f8fafc;
+      background: #fff;
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; 
       color: #111827; 
       font-size: 11px;
@@ -1572,99 +1557,108 @@ export class PDFGenerator {
     }
     #printable-document {
       width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 24px;
-      padding: 20px 8px 40px 8px;
-      box-sizing: border-box;
-      overflow-x: auto;
+      margin: 0;
+      padding: 0;
+      background: #fff;
     }
     .invoice-page {
       width: 100%;
-      max-width: 210mm;
-      min-width: 760px;
+      min-height: calc(297mm - 16mm);
       box-sizing: border-box;
       background: #fff;
+      page-break-after: always;
+      break-after: page;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      margin: 0;
+      padding: 0;
+    }
+    .invoice-page:last-child {
+      page-break-after: avoid;
+      break-after: avoid;
     }
     .invoice-card {
       width: 100%;
+      min-height: calc(297mm - 16mm);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
       box-sizing: border-box;
       background: #fff;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      border-radius: 12px;
-      overflow: hidden;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .avoid-break {
       page-break-inside: avoid;
       break-inside: avoid;
     }
 
+    @media screen {
+      body {
+        background: #f1f5f9;
+      }
+      #printable-document {
+        max-width: 210mm;
+        margin: 0 auto;
+        padding: 20px 0 40px 0;
+        background: transparent;
+      }
+      .invoice-page {
+        margin-bottom: 24px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      }
+      .invoice-page:last-child {
+        margin-bottom: 0;
+      }
+    }
+
     @media print {
-      html, body { 
-        margin: 0 !important;
-        padding: 0 !important;
-        background: #fff !important;
+      body { 
         -webkit-print-color-adjust: exact !important; 
         print-color-adjust: exact !important; 
-        height: auto !important;
+        background: #fff !important; 
+        margin: 0 !important;
+        padding: 0 !important;
       }
       .no-print, #preview-action-toolbar { 
         display: none !important; 
       }
       #printable-document {
-        display: block !important;
         width: 100% !important;
         max-width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: visible !important;
-        gap: 0 !important;
-      }
-      .invoice-page {
-        page-break-after: always !important;
-        break-after: page !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        height: auto !important;
-        box-sizing: border-box !important;
         margin: 0 !important;
         padding: 0 !important;
         background: #fff !important;
       }
-      .invoice-page:last-child,
-      .invoice-page:last-of-type {
+      .invoice-page {
+        width: 100% !important;
+        min-height: calc(297mm - 16mm) !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      .invoice-page:last-child {
         page-break-after: avoid !important;
         break-after: avoid !important;
       }
       .invoice-card {
         width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        height: auto !important;
-        display: block !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-        page-break-after: avoid !important;
-        break-after: avoid !important;
-        box-sizing: border-box !important;
+        min-height: calc(297mm - 16mm) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
         box-shadow: none !important;
-        border-width: 1.5px !important;
-        border-radius: 6px !important;
-      }
-      .avoid-break {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
     }
   </style>
 </head>
-<body class="p-0 bg-slate-100 text-gray-900 w-full">
+<body class="p-0 bg-white text-gray-900 w-full">
   <div id="printable-document">
     ${renderedPages.join('\n')}
   </div>
@@ -1758,6 +1752,35 @@ export class PDFGenerator {
       var origScrollY = window.scrollY;
       window.scrollTo(0, 0);
 
+      var printableDoc = document.getElementById('printable-document');
+      var singleCard = document.querySelector('.invoice-card') || document.querySelector('.report-card');
+      var target = printableDoc || singleCard || document.body;
+
+      // Temporarily clear screen preview spacing/shadows for pristine 1:1 A4 capture
+      var origDocStyle = printableDoc ? printableDoc.getAttribute('style') : null;
+      var origCardStyle = (!printableDoc && singleCard) ? singleCard.getAttribute('style') : null;
+
+      var pages = document.querySelectorAll('.invoice-page');
+      var origPageStyles = [];
+      pages.forEach(function(p, i) {
+        origPageStyles[i] = p.getAttribute('style');
+        p.style.marginBottom = '0px';
+        p.style.boxShadow = 'none';
+        p.style.margin = '0px';
+      });
+
+      if (printableDoc) {
+        printableDoc.style.padding = '0px';
+        printableDoc.style.margin = '0px';
+        printableDoc.style.maxWidth = '100%';
+        printableDoc.style.width = '100%';
+      } else if (singleCard) {
+        singleCard.style.margin = '0px';
+        singleCard.style.boxShadow = 'none';
+        singleCard.style.maxWidth = '100%';
+        singleCard.style.width = '100%';
+      }
+
       var opt = {
         margin: 0,
         filename: '${safeFilename}.pdf',
@@ -1769,7 +1792,6 @@ export class PDFGenerator {
           logging: false,
           scrollX: 0,
           scrollY: 0,
-          windowWidth: 1024
         },
         jsPDF: {
           unit: 'mm',
@@ -1779,30 +1801,40 @@ export class PDFGenerator {
         },
         pagebreak: {
           mode: ['css', 'legacy'],
-          before: '.invoice-page',
           avoid: ['.avoid-break', 'tr', '.report-card']
         }
       };
 
-      // In bulk view, #printable-document wraps ALL .invoice-page items!
-      var target = document.getElementById('printable-document') || document.querySelector('.invoice-card') || document.querySelector('.report-card') || document.body;
+      function restoreStyles() {
+        if (printableDoc) {
+          if (origDocStyle !== null) printableDoc.setAttribute('style', origDocStyle);
+          else printableDoc.removeAttribute('style');
+        } else if (singleCard) {
+          if (origCardStyle !== null) singleCard.setAttribute('style', origCardStyle);
+          else singleCard.removeAttribute('style');
+        }
+        pages.forEach(function(p, i) {
+          if (origPageStyles[i] !== null && origPageStyles[i] !== undefined) {
+            p.setAttribute('style', origPageStyles[i]);
+          } else {
+            p.removeAttribute('style');
+          }
+        });
+        window.scrollTo(0, origScrollY);
+        btn.innerHTML = origText;
+        btn.disabled = false;
+      }
 
       if (window.html2pdf) {
         window.html2pdf().set(opt).from(target).save().then(function() {
-          btn.innerHTML = origText;
-          btn.disabled = false;
-          window.scrollTo(0, origScrollY);
+          restoreStyles();
         }).catch(function(err) {
           console.warn('html2pdf notice, opening print dialog:', err);
-          btn.innerHTML = origText;
-          btn.disabled = false;
-          window.scrollTo(0, origScrollY);
+          restoreStyles();
           window.print();
         });
       } else {
-        btn.innerHTML = origText;
-        btn.disabled = false;
-        window.scrollTo(0, origScrollY);
+        restoreStyles();
         window.print();
       }
     }
@@ -1904,7 +1936,7 @@ export class PDFGenerator {
   <style>
     @page { 
       size: A4 portrait; 
-      margin: 6mm; 
+      margin: 8mm; 
     }
     * {
       box-sizing: border-box;
@@ -1912,61 +1944,71 @@ export class PDFGenerator {
     html, body { 
       margin: 0;
       padding: 0;
-      background: #f8fafc;
+      width: 100%;
+      background: #fff;
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; 
       color: #111827; 
       font-size: 11px;
     }
-    #printable-document {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      padding: 16px 8px 40px 8px;
-      box-sizing: border-box;
-      overflow-x: auto;
-    }
     .report-card {
       width: 100%;
-      max-width: 840px;
-      min-width: 760px;
+      min-height: calc(297mm - 16mm);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       box-sizing: border-box;
       background: #fff;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      border: 2px solid #064e3b;
-      border-radius: 12px;
-      overflow: hidden;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .avoid-break {
       page-break-inside: avoid;
       break-inside: avoid;
     }
-    @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #fff !important; }
-      .no-print, #preview-action-toolbar { display: none !important; }
-      #printable-document { display: block !important; width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+
+    @media screen {
+      body {
+        background: #f1f5f9;
+      }
       .report-card {
-        min-height: 0 !important;
-        height: auto !important;
-        display: block !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
+        max-width: 210mm;
+        margin: 20px auto 40px auto;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 2px solid #064e3b;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+    }
+
+    @media print {
+      body { 
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important; 
+        background: #fff !important; 
         margin: 0 !important;
+        padding: 0 !important;
+      }
+      .no-print, #preview-action-toolbar { 
+        display: none !important; 
+      }
+      .report-card {
+        width: 100% !important;
+        min-height: calc(297mm - 16mm) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
         box-shadow: none !important;
-        border-width: 1.5px !important;
-        border-radius: 6px !important;
+        border: 2px solid #064e3b !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
     }
   </style>
 </head>
-<body class="p-0 bg-slate-50 text-gray-900">
-  <div id="printable-document">
-  <div class="report-card max-w-[840px] mx-auto border-2 border-emerald-900 rounded-xl overflow-hidden bg-white shadow-md">
+<body class="p-0 bg-white text-gray-900 w-full">
+  <div class="report-card w-full border-2 border-emerald-900 rounded-xl overflow-hidden bg-white shadow-none">
     <div class="flex-1 flex flex-col">
       <!-- 1. Header Banner -->
       <div class="p-4 bg-gradient-to-r from-emerald-50 via-white to-emerald-50/40 border-b-2 border-emerald-900 flex justify-between items-center gap-4">
@@ -2085,7 +2127,6 @@ export class PDFGenerator {
       </div>
     </div>
   </div>
-  </div>
 </body>
 </html>
     `;
@@ -2167,7 +2208,7 @@ export class PDFGenerator {
   <style>
     @page { 
       size: A4 portrait; 
-      margin: 6mm; 
+      margin: 8mm; 
     }
     * {
       box-sizing: border-box;
@@ -2175,61 +2216,71 @@ export class PDFGenerator {
     html, body { 
       margin: 0;
       padding: 0;
-      background: #f8fafc;
+      width: 100%;
+      background: #fff;
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; 
       color: #111827; 
       font-size: 11px;
     }
-    #printable-document {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      padding: 16px 8px 40px 8px;
-      box-sizing: border-box;
-      overflow-x: auto;
-    }
     .report-card {
       width: 100%;
-      max-width: 840px;
-      min-width: 760px;
+      min-height: calc(297mm - 16mm);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       box-sizing: border-box;
       background: #fff;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      border: 2px solid #334155;
-      border-radius: 12px;
-      overflow: hidden;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .avoid-break {
       page-break-inside: avoid;
       break-inside: avoid;
     }
-    @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #fff !important; }
-      .no-print, #preview-action-toolbar { display: none !important; }
-      #printable-document { display: block !important; width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+
+    @media screen {
+      body {
+        background: #f1f5f9;
+      }
       .report-card {
-        min-height: 0 !important;
-        height: auto !important;
-        display: block !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
+        max-width: 210mm;
+        margin: 20px auto 40px auto;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 2px solid #334155;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+    }
+
+    @media print {
+      body { 
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important; 
+        background: #fff !important; 
         margin: 0 !important;
+        padding: 0 !important;
+      }
+      .no-print, #preview-action-toolbar { 
+        display: none !important; 
+      }
+      .report-card {
+        width: 100% !important;
+        min-height: calc(297mm - 16mm) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
         box-shadow: none !important;
-        border-width: 1.5px !important;
-        border-radius: 6px !important;
+        border: 2px solid #334155 !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
     }
   </style>
 </head>
-<body class="p-0 bg-slate-50 text-gray-900">
-  <div id="printable-document">
-  <div class="report-card max-w-[840px] mx-auto border-2 border-slate-800 rounded-xl overflow-hidden bg-white shadow-md">
+<body class="p-0 bg-white text-gray-900 w-full">
+  <div class="report-card w-full border-2 border-slate-800 rounded-xl overflow-hidden bg-white shadow-none">
     <div class="flex-1 flex flex-col">
       <!-- 1. Header Banner (NO Business Logo - Internal Audit Format) -->
       <div class="p-4 bg-slate-100 border-b-2 border-slate-800 flex justify-between items-center gap-4">
@@ -2345,7 +2396,6 @@ export class PDFGenerator {
         <span class="font-mono">Audited & Verified</span>
       </div>
     </div>
-  </div>
   </div>
 </body>
 </html>
