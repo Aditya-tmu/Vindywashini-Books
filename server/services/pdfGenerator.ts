@@ -174,14 +174,12 @@ export class PDFGenerator {
 <head>
   <meta charset="utf-8">
   <title>Tax Invoice - ${invoice.invoiceNumber}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @page { 
       size: A4 portrait; 
-      margin: 8mm; 
-    }
-    @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      margin: 6mm; 
     }
     * {
       box-sizing: border-box;
@@ -190,30 +188,84 @@ export class PDFGenerator {
       margin: 0;
       padding: 0;
       width: 100%;
-      background: #fff;
+      background: #f8fafc;
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; 
       color: #111827; 
       font-size: 11px;
       line-height: 1.35;
     }
+    #printable-document {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 16px 8px 40px 8px;
+      box-sizing: border-box;
+      overflow-x: auto;
+    }
     .invoice-card {
       width: 100%;
-      min-height: calc(297mm - 16mm);
+      max-width: 210mm;
+      min-width: 760px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       box-sizing: border-box;
       background: #fff;
-      page-break-inside: avoid;
-      break-inside: avoid;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      border: 2px solid #064e3b;
+      border-radius: 12px;
+      overflow: hidden;
     }
     .avoid-break {
       page-break-inside: avoid;
       break-inside: avoid;
     }
+
+    @media print {
+      html, body { 
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important; 
+        height: auto !important;
+      }
+      .no-print, #preview-action-toolbar {
+        display: none !important;
+      }
+      #printable-document {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+      }
+      .invoice-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        height: auto !important;
+        display: block !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+        box-sizing: border-box !important;
+        box-shadow: none !important;
+        border-width: 1.5px !important;
+        border-radius: 6px !important;
+      }
+      .avoid-break {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+    }
   </style>
 </head>
-<body class="p-0 bg-white text-gray-900 w-full">
+<body class="p-0 bg-slate-50 text-gray-900 w-full">
+  <div id="printable-document">
   <div class="invoice-card w-full border-2 border-emerald-900 rounded-xl overflow-hidden bg-white shadow-none">
 
 
@@ -443,6 +495,7 @@ export class PDFGenerator {
       </div>
     </div>
   </div>
+  </div>
 </body>
 </html>
     `;
@@ -517,14 +570,12 @@ export class PDFGenerator {
 <head>
   <meta charset="utf-8">
   <title>Purchase Bill - ${purchase.billNumber}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @page { 
       size: A4 portrait; 
-      margin: 8mm; 
-    }
-    @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      margin: 6mm; 
     }
     * {
       box-sizing: border-box;
@@ -533,32 +584,85 @@ export class PDFGenerator {
       margin: 0;
       padding: 0;
       width: 100%;
-      background: #fff;
+      background: #f8fafc;
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; 
       color: #111827; 
       font-size: 11px;
       line-height: 1.35;
     }
+    #printable-document {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 16px 8px 40px 8px;
+      box-sizing: border-box;
+      overflow-x: auto;
+    }
     .invoice-card {
       width: 100%;
-      min-height: calc(297mm - 16mm);
+      max-width: 210mm;
+      min-width: 760px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       box-sizing: border-box;
       background: #fff;
-      page-break-inside: avoid;
-      break-inside: avoid;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      border: 2px solid #334155;
+      border-radius: 12px;
+      overflow: hidden;
     }
-
     .avoid-break {
       page-break-inside: avoid;
       break-inside: avoid;
     }
+
+    @media print {
+      html, body { 
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important; 
+        height: auto !important;
+      }
+      .no-print, #preview-action-toolbar {
+        display: none !important;
+      }
+      #printable-document {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+      }
+      .invoice-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        height: auto !important;
+        display: block !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+        box-sizing: border-box !important;
+        box-shadow: none !important;
+        border-width: 1.5px !important;
+        border-radius: 6px !important;
+      }
+      .avoid-break {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+    }
   </style>
 </head>
 
-<body class="p-0 bg-white text-gray-900 w-full">
+<body class="p-0 bg-slate-50 text-gray-900 w-full">
+  <div id="printable-document">
   <div class="invoice-card w-full border-2 border-slate-700 rounded-xl overflow-hidden bg-white shadow-none">
 
     
@@ -732,6 +836,7 @@ export class PDFGenerator {
       </div>
     </div>
   </div>
+  </div>
 </body>
 </html>
     `;
@@ -781,27 +886,62 @@ export class PDFGenerator {
   <meta charset="utf-8">
   <title>Invoice - ${invoice.invoiceNumber}</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    @page { size: A5 landscape; margin: 8mm; }
+    @page { size: A5 landscape; margin: 6mm; }
+    * { box-sizing: border-box; }
     html, body {
-      height: 100%;
       margin: 0;
       padding: 0;
-      background: #fff;
+      background: #f8fafc;
       font-family: 'Segoe UI', Arial, sans-serif; 
       color: #1f2937; 
       font-size: 11px;
     }
+    #printable-document {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 16px 8px;
+      box-sizing: border-box;
+      overflow-x: auto;
+    }
     .invoice-card {
-      min-height: calc(148mm - 16mm);
+      width: 100%;
+      max-width: 210mm;
+      min-width: 600px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       box-sizing: border-box;
+      background: #fff;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      border: 1px solid #064e3b;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #fff !important; }
+      .no-print, #preview-action-toolbar { display: none !important; }
+      #printable-document { display: block !important; width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+      .invoice-card {
+        min-height: 0 !important;
+        height: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        display: block !important;
+        box-shadow: none !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
     }
   </style>
 </head>
-<body class="p-2 bg-white text-gray-900">
+<body class="p-0 bg-slate-50 text-gray-900">
+  <div id="printable-document">
   <div class="invoice-card border border-emerald-900 rounded-lg p-3 bg-white">
     <div>
       <!-- Header -->
@@ -864,6 +1004,7 @@ export class PDFGenerator {
         <div class="text-[9px] text-gray-600 mt-1">For ${company.tradeName || company.legalName}</div>
       </div>
     </div>
+  </div>
   </div>
 </body>
 </html>
@@ -1238,7 +1379,8 @@ export class PDFGenerator {
     for (const inv of invoices) {
       const fullHtml = await this.renderA4Html(inv, company);
       const bodyMatch = fullHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      const bodyContent = bodyMatch ? bodyMatch[1] : fullHtml;
+      let bodyContent = bodyMatch ? bodyMatch[1] : fullHtml;
+      bodyContent = bodyContent.replace(/<div id="printable-document"[^>]*>/i, '').replace(/<\/div>\s*$/i, '');
       renderedPages.push(`<div class="invoice-page w-full">${bodyContent}</div>`);
     }
 
@@ -1248,14 +1390,12 @@ export class PDFGenerator {
 <head>
   <meta charset="utf-8">
   <title>Consolidated Invoices - ${company.tradeName || company.legalName}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @page { 
       size: A4 portrait; 
-      margin: 8mm; 
-    }
-    @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      margin: 6mm; 
     }
     * {
       box-sizing: border-box;
@@ -1264,48 +1404,110 @@ export class PDFGenerator {
       margin: 0;
       padding: 0;
       width: 100%;
-      background: #fff;
+      background: #f8fafc;
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; 
       color: #111827; 
       font-size: 11px;
       line-height: 1.35;
     }
-    .invoice-page {
-      page-break-after: always;
-      break-after: page;
-      page-break-inside: avoid;
-      break-inside: avoid;
+    #printable-document {
       width: 100%;
-      min-height: calc(297mm - 16mm);
       display: flex;
       flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      padding: 20px 8px 40px 8px;
+      box-sizing: border-box;
+      overflow-x: auto;
+    }
+    .invoice-page {
+      width: 100%;
+      max-width: 210mm;
+      min-width: 760px;
       box-sizing: border-box;
       background: #fff;
-    }
-    .invoice-page:last-child {
-      page-break-after: auto;
-      break-after: auto;
     }
     .invoice-card {
       width: 100%;
-      min-height: calc(297mm - 16mm);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
       box-sizing: border-box;
       background: #fff;
-      page-break-inside: avoid;
-      break-inside: avoid;
-      flex: 1 1 auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      border-radius: 12px;
+      overflow: hidden;
     }
     .avoid-break {
       page-break-inside: avoid;
       break-inside: avoid;
     }
+
+    @media print {
+      html, body { 
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important; 
+        height: auto !important;
+      }
+      .no-print, #preview-action-toolbar { 
+        display: none !important; 
+      }
+      #printable-document {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        gap: 0 !important;
+      }
+      .invoice-page {
+        page-break-after: always !important;
+        break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        height: auto !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+      }
+      .invoice-page:last-child,
+      .invoice-page:last-of-type {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      .invoice-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        height: auto !important;
+        display: block !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+        box-sizing: border-box !important;
+        box-shadow: none !important;
+        border-width: 1.5px !important;
+        border-radius: 6px !important;
+      }
+      .avoid-break {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+    }
   </style>
 </head>
-<body class="p-0 bg-white text-gray-900 w-full">
-  ${renderedPages.join('\n')}
+<body class="p-0 bg-slate-100 text-gray-900 w-full">
+  <div id="printable-document">
+    ${renderedPages.join('\n')}
+  </div>
 </body>
 </html>
     `;
@@ -1337,7 +1539,8 @@ export class PDFGenerator {
     for (const p of purchases) {
       const fullHtml = await this.renderPurchaseBillHtml(p, company);
       const bodyMatch = fullHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      const bodyContent = bodyMatch ? bodyMatch[1] : fullHtml;
+      let bodyContent = bodyMatch ? bodyMatch[1] : fullHtml;
+      bodyContent = bodyContent.replace(/<div id="printable-document"[^>]*>/i, '').replace(/<\/div>\s*$/i, '');
       renderedPages.push(`<div class="invoice-page w-full">${bodyContent}</div>`);
     }
 
@@ -1347,14 +1550,12 @@ export class PDFGenerator {
 <head>
   <meta charset="utf-8">
   <title>Consolidated Purchase Records - ${company.tradeName || company.legalName}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @page { 
       size: A4 portrait; 
-      margin: 8mm; 
-    }
-    @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      margin: 6mm; 
     }
     * {
       box-sizing: border-box;
@@ -1363,48 +1564,110 @@ export class PDFGenerator {
       margin: 0;
       padding: 0;
       width: 100%;
-      background: #fff;
+      background: #f8fafc;
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; 
       color: #111827; 
       font-size: 11px;
       line-height: 1.35;
     }
-    .invoice-page {
-      page-break-after: always;
-      break-after: page;
-      page-break-inside: avoid;
-      break-inside: avoid;
+    #printable-document {
       width: 100%;
-      min-height: calc(297mm - 16mm);
       display: flex;
       flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      padding: 20px 8px 40px 8px;
+      box-sizing: border-box;
+      overflow-x: auto;
+    }
+    .invoice-page {
+      width: 100%;
+      max-width: 210mm;
+      min-width: 760px;
       box-sizing: border-box;
       background: #fff;
-    }
-    .invoice-page:last-child {
-      page-break-after: auto;
-      break-after: auto;
     }
     .invoice-card {
       width: 100%;
-      min-height: calc(297mm - 16mm);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
       box-sizing: border-box;
       background: #fff;
-      page-break-inside: avoid;
-      break-inside: avoid;
-      flex: 1 1 auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      border-radius: 12px;
+      overflow: hidden;
     }
     .avoid-break {
       page-break-inside: avoid;
       break-inside: avoid;
     }
+
+    @media print {
+      html, body { 
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important; 
+        height: auto !important;
+      }
+      .no-print, #preview-action-toolbar { 
+        display: none !important; 
+      }
+      #printable-document {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        gap: 0 !important;
+      }
+      .invoice-page {
+        page-break-after: always !important;
+        break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        height: auto !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+      }
+      .invoice-page:last-child,
+      .invoice-page:last-of-type {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      .invoice-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        height: auto !important;
+        display: block !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+        box-sizing: border-box !important;
+        box-shadow: none !important;
+        border-width: 1.5px !important;
+        border-radius: 6px !important;
+      }
+      .avoid-break {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+    }
   </style>
 </head>
-<body class="p-0 bg-white text-gray-900 w-full">
-  ${renderedPages.join('\n')}
+<body class="p-0 bg-slate-100 text-gray-900 w-full">
+  <div id="printable-document">
+    ${renderedPages.join('\n')}
+  </div>
 </body>
 </html>
     `;
@@ -1491,29 +1754,55 @@ export class PDFGenerator {
       btn.innerHTML = '⏳ Generating PDF...';
       btn.disabled = true;
 
+      // Ensure window is scrolled to top to eliminate scroll clipping on mobile and desktop
+      var origScrollY = window.scrollY;
+      window.scrollTo(0, 0);
+
       var opt = {
-        margin: 4,
+        margin: 0,
         filename: '${safeFilename}.pdf',
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: '${pdfFormat}', orientation: 'portrait' }
+        enableLinks: false,
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: 1024
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: '${pdfFormat}',
+          orientation: 'portrait',
+          compress: true
+        },
+        pagebreak: {
+          mode: ['css', 'legacy'],
+          before: '.invoice-page',
+          avoid: ['.avoid-break', 'tr', '.report-card']
+        }
       };
 
-      var target = document.querySelector('.invoice-card') || document.querySelector('.report-card') || document.body;
+      // In bulk view, #printable-document wraps ALL .invoice-page items!
+      var target = document.getElementById('printable-document') || document.querySelector('.invoice-card') || document.querySelector('.report-card') || document.body;
 
       if (window.html2pdf) {
         window.html2pdf().set(opt).from(target).save().then(function() {
           btn.innerHTML = origText;
           btn.disabled = false;
+          window.scrollTo(0, origScrollY);
         }).catch(function(err) {
           console.warn('html2pdf notice, opening print dialog:', err);
           btn.innerHTML = origText;
           btn.disabled = false;
+          window.scrollTo(0, origScrollY);
           window.print();
         });
       } else {
         btn.innerHTML = origText;
         btn.disabled = false;
+        window.scrollTo(0, origScrollY);
         window.print();
       }
     }
@@ -1610,38 +1899,73 @@ export class PDFGenerator {
 <head>
   <meta charset="utf-8">
   <title>GST Summary Report - ${party?.name || 'Customer'}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @page { 
       size: A4 portrait; 
-      margin: 10mm; 
+      margin: 6mm; 
     }
-    @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    * {
+      box-sizing: border-box;
     }
     html, body { 
       margin: 0;
       padding: 0;
-      background: #fff;
+      background: #f8fafc;
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; 
       color: #111827; 
       font-size: 11px;
     }
+    #printable-document {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 16px 8px 40px 8px;
+      box-sizing: border-box;
+      overflow-x: auto;
+    }
     .report-card {
-      min-height: calc(297mm - 20mm);
+      width: 100%;
+      max-width: 840px;
+      min-width: 760px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       box-sizing: border-box;
       background: #fff;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      border: 2px solid #064e3b;
+      border-radius: 12px;
+      overflow: hidden;
     }
     .avoid-break {
       page-break-inside: avoid;
       break-inside: avoid;
     }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #fff !important; }
+      .no-print, #preview-action-toolbar { display: none !important; }
+      #printable-document { display: block !important; width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+      .report-card {
+        min-height: 0 !important;
+        height: auto !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border-width: 1.5px !important;
+        border-radius: 6px !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+    }
   </style>
 </head>
-<body class="p-0 bg-white text-gray-900">
+<body class="p-0 bg-slate-50 text-gray-900">
+  <div id="printable-document">
   <div class="report-card max-w-[840px] mx-auto border-2 border-emerald-900 rounded-xl overflow-hidden bg-white shadow-md">
     <div class="flex-1 flex flex-col">
       <!-- 1. Header Banner -->
@@ -1761,6 +2085,7 @@ export class PDFGenerator {
       </div>
     </div>
   </div>
+  </div>
 </body>
 </html>
     `;
@@ -1837,38 +2162,73 @@ export class PDFGenerator {
 <head>
   <meta charset="utf-8">
   <title>Purchase & ITC Summary - ${party?.name || 'Supplier'}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @page { 
       size: A4 portrait; 
-      margin: 10mm; 
+      margin: 6mm; 
     }
-    @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    * {
+      box-sizing: border-box;
     }
     html, body { 
       margin: 0;
       padding: 0;
-      background: #fff;
+      background: #f8fafc;
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; 
       color: #111827; 
       font-size: 11px;
     }
+    #printable-document {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 16px 8px 40px 8px;
+      box-sizing: border-box;
+      overflow-x: auto;
+    }
     .report-card {
-      min-height: calc(297mm - 20mm);
+      width: 100%;
+      max-width: 840px;
+      min-width: 760px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       box-sizing: border-box;
       background: #fff;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      border: 2px solid #334155;
+      border-radius: 12px;
+      overflow: hidden;
     }
     .avoid-break {
       page-break-inside: avoid;
       break-inside: avoid;
     }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #fff !important; }
+      .no-print, #preview-action-toolbar { display: none !important; }
+      #printable-document { display: block !important; width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+      .report-card {
+        min-height: 0 !important;
+        height: auto !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border-width: 1.5px !important;
+        border-radius: 6px !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+    }
   </style>
 </head>
-<body class="p-0 bg-white text-gray-900">
+<body class="p-0 bg-slate-50 text-gray-900">
+  <div id="printable-document">
   <div class="report-card max-w-[840px] mx-auto border-2 border-slate-800 rounded-xl overflow-hidden bg-white shadow-md">
     <div class="flex-1 flex flex-col">
       <!-- 1. Header Banner (NO Business Logo - Internal Audit Format) -->
@@ -1985,6 +2345,7 @@ export class PDFGenerator {
         <span class="font-mono">Audited & Verified</span>
       </div>
     </div>
+  </div>
   </div>
 </body>
 </html>

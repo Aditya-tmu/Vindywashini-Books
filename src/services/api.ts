@@ -543,16 +543,137 @@ export const api = {
     return `${API_BASE}/parties/${partyId}/purchase-summary/pdf?${params.toString()}`;
   },
   downloadPdfFromUrl: async (url: string, filename: string): Promise<void> => {
-    const res = await client.get(url.replace(API_BASE, ''), { responseType: 'blob' });
-    const blob = new Blob([res.data], { type: 'application/pdf' });
-    const downloadUrl = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(downloadUrl);
+    const cleanUrl = url.startsWith(API_BASE) ? url.substring(API_BASE.length) : url;
+    const res = await client.get(cleanUrl, { responseType: 'blob' });
+    const contentType = (res.headers && res.headers['content-type']) || (res.data && res.data.type) || '';
+
+    // Check if the response is actually HTML markup rather than a binary PDF
+    let isHtml = typeof contentType === 'string' && contentType.includes('text/html');
+    let rawText = '';
+
+    if (isHtml) {
+      rawText = await res.data.text();
+    } else {
+      // Inspect the first bytes for standard PDF magic header '%PDF-'
+      const slice = res.data.slice(0, 10);
+      const textHeader = await slice.text();
+      if (textHeader.startsWith('<!') || textHeader.startsWith('<h') || !textHeader.startsWith('%PDF-')) {
+        isHtml = true;
+        rawText = await res.data.text();
+      }
+    }
+
+    if (!isHtml) {
+      // Genuine binary PDF stream from server
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+      return;
+    }
+
+    // Response is HTML (e.g. Render cloud host where headless Chrome is unavailable)
+    // Convert the HTML into a genuine, valid PDF binary on the client side!
+    try {
+      // Dynamically load html2pdf from CDN if not already present
+      const getHtml2Pdf = async (): Promise<any> => {
+        if (typeof window === 'undefined') return null;
+        if ((window as any).html2pdf) return (window as any).html2pdf;
+        return new Promise((resolve, reject) => {
+          const existing = document.querySelector('script[src*="html2pdf"]') as HTMLScriptElement | null;
+          if (existing) {
+            if ((window as any).html2pdf) return resolve((window as any).html2pdf);
+            existing.addEventListener('load', () => resolve((window as any).html2pdf));
+            existing.addEventListener('error', (e) => reject(new Error('Failed to load html2pdf script: ' + e)));
+            return;
+          }
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+          script.async = true;
+          script.onload = () => resolve((window as any).html2pdf);
+          script.onerror = (e) => reject(new Error('Failed to load html2pdf script: ' + e));
+          document.head.appendChild(script);
+        });
+      };
+
+      const html2pdf = await getHtml2Pdf();
+      if (!html2pdf) {
+        throw new Error('html2pdf library could not be loaded.');
+      }
+
+      // Create an offscreen sandbox with fixed 1024px canvas to preserve pristine A4 layout
+      const sandbox = document.createElement('div');
+      sandbox.id = 'pdf-render-sandbox';
+      sandbox.style.position = 'fixed';
+      sandbox.style.left = '-9999px';
+      sandbox.style.top = '0';
+      sandbox.style.width = '1024px';
+      sandbox.style.background = '#ffffff';
+      sandbox.style.zIndex = '-99999';
+      sandbox.innerHTML = rawText;
+
+      // Remove interactive toolbar and no-print elements
+      const toolbar = sandbox.querySelector('#preview-action-toolbar');
+      if (toolbar) toolbar.remove();
+      const noPrintEls = sandbox.querySelectorAll('.no-print');
+      noPrintEls.forEach((el) => el.remove());
+
+      document.body.appendChild(sandbox);
+
+      const targetEl =
+        sandbox.querySelector('#printable-document') ||
+        sandbox.querySelector('.invoice-card') ||
+        sandbox.querySelector('.report-card') ||
+        sandbox;
+
+      const opt = {
+        margin: 0,
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        enableLinks: false,
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: 1024,
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait',
+          compress: true,
+        },
+        pagebreak: {
+          mode: ['css', 'legacy'],
+          before: '.invoice-page',
+          avoid: ['.avoid-break', 'tr'],
+        },
+      };
+
+      const pdfBlob = await html2pdf().set(opt).from(targetEl).outputPdf('blob');
+      document.body.removeChild(sandbox);
+
+      // Trigger download of real PDF blob
+      const downloadUrl = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+    } catch (err: any) {
+      console.warn('Client html2pdf conversion error, opening printable view in tab:', err);
+      window.open(url, '_blank');
+      throw new Error('Opened printable document in new tab. You can save or print directly from the top bar.');
+    }
   },
   getExportSnapshotUrl: (companyId?: string) =>
     `${API_BASE}/settings/export-snapshot${companyId ? '?companyId=' + companyId : ''}`,
